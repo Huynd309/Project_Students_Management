@@ -1,24 +1,36 @@
 <?php
-// Lấy biến môi trường
-$host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? null);
-$port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '5432');
-$dbname = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? null);
-$user_db = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? null);
-$password_db = getenv('DB_PASSWORD') ?: ($_ENV['DB_PASSWORD'] ?? null);
+$database_url = getenv('DATABASE_URL');
 
-if (!$host) {
+if (!$database_url) {
     $host = '127.0.0.1';
+    $port = '5432';
     $dbname = 'Student_Information';
-    $user_db = 'postgres';
-    $password_db = 'Ngohuy3092005';
+    $user = 'postgres';
+    $password = 'Ngohuy3092005';
+    
+    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+} else {
+    $db = parse_url($database_url);
+    
+    $host = $db['host'];
+    $port = $db['port'];
+    $dbname = ltrim($db['path'], '/'); 
+    $user = $db['user'];
+    $password = $db['pass'];
+    
+    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
 }
 
 try {
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    
-    $conn = new PDO($dsn, $user_db, $password_db);
+    $conn = new PDO($dsn, $user, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Lỗi kết nối: " . $e->getMessage() . "<br>Thông tin đang dùng: Host=$host | DB=$dbname | User=$user_db");
+    if ($database_url) {
+        echo "<h1>Lỗi Kết Nối Server!</h1>";
+        echo "URL nhận được: " . htmlspecialchars($database_url) . "<br>";
+        echo "Host giải mã: " . htmlspecialchars($host) . "<br>";
+        echo "DB giải mã: " . htmlspecialchars($dbname) . "<br>";
+    }
+    die("Chi tiết lỗi: " . $e->getMessage());
 }
 ?>
