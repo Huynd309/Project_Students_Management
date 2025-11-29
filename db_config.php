@@ -13,8 +13,10 @@ if (!$database_url) {
     $db = parse_url($database_url);
     
     $host = $db['host'];
-    $port = $db['port'];
-    $dbname = ltrim($db['path'], '/'); 
+    
+    $port = isset($db['port']) ? $db['port'] : '5432'; 
+    
+    $dbname = ltrim($db['path'], '/');
     $user = $db['user'];
     $password = $db['pass'];
     
@@ -27,9 +29,9 @@ try {
 } catch (PDOException $e) {
     if ($database_url) {
         echo "<h1>Lỗi Kết Nối Server!</h1>";
-        echo "URL nhận được: " . htmlspecialchars($database_url) . "<br>";
-        echo "Host giải mã: " . htmlspecialchars($host) . "<br>";
-        echo "DB giải mã: " . htmlspecialchars($dbname) . "<br>";
+        echo "Host: " . htmlspecialchars($host) . "<br>";
+        echo "Port: " . htmlspecialchars($port) . "<br>";
+        echo "DB: " . htmlspecialchars($dbname) . "<br>";
     }
     die("Chi tiết lỗi: " . $e->getMessage());
 }
