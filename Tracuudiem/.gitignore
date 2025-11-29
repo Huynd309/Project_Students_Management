@@ -1,6 +1,3 @@
-# Bỏ qua file chứa mật khẩu
-db_config.php
-
 # Bỏ qua các file hệ thống mac/windows
 .DS_Store
 Thumbs.db

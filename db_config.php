@@ -1,10 +1,9 @@
 <?php
-// File: db_config.php
-$host = '127.0.0.1';
-$port = '5432';
-$dbname = 'Student_Information';
-$user_db = 'postgres';
-$password_db = 'Ngohuy3092005';
+$host = getenv('DB_HOST') ?: '127.0.0.1';
+$port = getenv('DB_PORT') ?: '5432';
+$dbname = getenv('DB_NAME') ?: 'Student_Information';
+$user_db = getenv('DB_USER') ?: 'postgres';
+$password_db = getenv('DB_PASSWORD') ?: 'Ngohuy3092005';
 
 try {
     $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
