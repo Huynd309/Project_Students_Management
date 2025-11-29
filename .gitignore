@@ -1,0 +1,17 @@
+
+# Chặn file chứa mật khẩu database
+db_config.php
+
+# File rác tự sinh ra của Mac (bạn đang dùng Mac nên rất cần cái này)
+.DS_Store
+
+# --- IDE & EDITOR ---
+# Cấu hình riêng của VS Code (không nên share)
+.vscode/
+
+# Thường chúng ta không đẩy ảnh/file do người dùng upload lên Git
+# (Trừ khi bạn muốn giữ ảnh mẫu)
+uploads/
+
+# File log lỗi (nếu có)
+error_log
