@@ -1,6 +1,0 @@
-# Bỏ qua các file hệ thống mac/windows
-.DS_Store
-Thumbs.db
-
-# Bỏ qua thư mục upload (nếu bạn không muốn ảnh rác lên git)
-uploads/
