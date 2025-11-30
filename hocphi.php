@@ -11,11 +11,7 @@ $hoc_phi_data = [];
 $class_name = "";
 $hoc_phi_moi_buoi = 70000;
 try {
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    $conn = new PDO($dsn, $user_db, $password_db);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    require_once 'db_config.php';
     $stmt_classes = $conn->prepare("SELECT id, ten_lop FROM lop_hoc ORDER BY ten_lop ASC");
     $stmt_classes->execute();
     $all_classes = $stmt_classes->fetchAll(PDO::FETCH_ASSOC);

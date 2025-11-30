@@ -8,14 +8,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $admin_id = $_POST['admin_id'];
     $new_password = $_POST['new_password'];
     $access_classes = $_POST['access_classes'] ?? [];
-
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-
+    
+    require_once 'db_config.php';
     try {
-        $conn = new PDO($dsn, $user_db, $password_db);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $conn->beginTransaction();
 
         if (!empty($new_password)) {

@@ -12,11 +12,7 @@ $admin_info = null;
 $assigned_class_ids = [];
 
 try {
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    $conn = new PDO($dsn, $user_db, $password_db);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    require_once 'db_config.php';
     
     $stmt_admin = $conn->prepare("SELECT * FROM users WHERE id = ? AND role != 'super'");
     $stmt_admin->execute([$admin_id]);

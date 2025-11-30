@@ -20,14 +20,9 @@ $students_list = [];
 $class_info = null;
 $existing_scores = [];
 
+require_once 'db_config.php';
+
 try {
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    
-    $conn = new PDO($dsn, $user_db, $password_db);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
     // Query 1
     $stmt_class = $conn->prepare("SELECT ten_lop FROM lop_hoc WHERE id = ?");
     $stmt_class->execute([$lop_id]);

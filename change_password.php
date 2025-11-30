@@ -15,14 +15,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];
 
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+    require_once 'db_config.php';
     
     try {
-        $conn = new PDO($dsn, $user_db, $password_db);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
         $stmt = $conn->prepare("SELECT password_hash FROM users WHERE id = ?");
         $stmt->execute([$user_id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);

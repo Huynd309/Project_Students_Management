@@ -17,13 +17,7 @@ if (!$sbd || !$thang || !$nam || !$status || !$lop_id) {
 $redirect_url = "hocphi.php?lop_id=$lop_id&thang=$thang&nam=$nam";
 
 try {
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    
-    $conn = new PDO($dsn, $user_db, $password_db);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
+    require_once 'db_config.php';
     $sql = "
         INSERT INTO hoc_phi_thang (so_bao_danh, thang, nam, trang_thai_dong_phi)
         VALUES (?, ?, ?, ?)

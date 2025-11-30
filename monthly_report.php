@@ -13,14 +13,7 @@ $report_data = [];
 $class_name = "";
 
 try {
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    
-    $conn = new PDO($dsn, $user_db, $password_db);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // --- QUERY 1: LẤY DANH SÁCH LỚP (CÓ PHÂN QUYỀN) ---
+    require_once 'db_config.php';
     $user_role = $_SESSION['role'] ?? 'admin'; 
 
     if ($user_role === 'super') {
@@ -39,7 +32,6 @@ try {
         $stmt_classes->execute([$_SESSION['user_id']]);
     }
     $all_classes = $stmt_classes->fetchAll(PDO::FETCH_ASSOC);
-    // ---------------------------------------------------
 
     // 2. Truy vấn dữ liệu tổng hợp
     if ($lop_id_filter) {

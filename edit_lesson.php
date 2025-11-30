@@ -14,10 +14,8 @@ $lesson = null;
 $current_class_ids = []; 
 
 try {
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    $conn = new PDO($dsn, $user_db, $password_db);
+    require_once 'db_config.php';
+    $conn = new PDO($dsn, $user, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $stmt_lesson = $conn->prepare("SELECT * FROM sidebar_content WHERE id = ?");

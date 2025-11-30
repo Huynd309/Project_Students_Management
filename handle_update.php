@@ -12,17 +12,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $sdt_phu_huynh = $_POST['sdt_phu_huynh'] ?? null; 
     $sdt_hoc_sinh = $_POST['sdt_hoc_sinh'] ?? null;
 
-    $host = '127.0.0.1';
-    $port = '5432';
-    $dbname = 'Student_Information';
-    $user_db = 'postgres';
-    $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-
     try {
-        $conn = new PDO($dsn, $user_db, $password_db);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
+        require_once 'db_config.php';
         $sql = "UPDATE diem_hoc_sinh 
                 SET ho_ten = ?, truong = ?, sdt_phu_huynh = ?, sdt_hoc_sinh = ?
                 WHERE so_bao_danh = ?";

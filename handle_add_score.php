@@ -10,14 +10,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $diem_so = $_POST['diem_so'];
     $ngay_kiem_tra = $_POST['ngay_kiem_tra'];
 
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+    require_once 'db_config.php';
 
     try {
-        $conn = new PDO($dsn, $user_db, $password_db);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
         $sql = "INSERT INTO diem_thanh_phan (so_bao_danh, lop_id, ten_cot_diem, diem_so, ngay_kiem_tra) 
                 VALUES (?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);

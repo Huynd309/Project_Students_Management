@@ -1,6 +1,5 @@
 <?php
 session_start();
-// Bảo mật: Chỉ SUPER ADMIN mới được vào
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'super') {
     die("TRUY CẬP BỊ TỪ CHỐI! Chỉ dành cho Super Admin.");
 }
@@ -9,18 +8,11 @@ $all_classes = [];
 $existing_admins = [];
 
 try {
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+    require_once 'db_config.php';
     
-    $conn = new PDO($dsn, $user_db, $password_db);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // 1. Lấy danh sách lớp
     $stmt = $conn->query("SELECT * FROM lop_hoc ORDER BY ten_lop ASC");
     $all_classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // 2. Lấy danh sách admin hiện có (kèm theo các lớp họ quản lý)
     $stmt_admins = $conn->query("
         SELECT 
             u.id, 
@@ -47,7 +39,6 @@ try {
     <title>Quản lý Admin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* CSS riêng cho checkbox chọn lớp */
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;

@@ -12,12 +12,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     $lop_ids = isset($_POST['lop_ids']) ? $_POST['lop_ids'] : [];
 
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+    require_once 'db_config.php';
 
     try {
-        $conn = new PDO($dsn, $user_db, $password_db);
         $conn->beginTransaction(); 
 
         $sql_update = "UPDATE sidebar_content 

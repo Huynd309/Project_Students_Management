@@ -9,13 +9,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
     $access_classes = $_POST['access_classes'] ?? []; 
 
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+    require_once 'db_config.php';
 
     try {
-        $conn = new PDO($dsn, $user_db, $password_db);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $conn->beginTransaction();
         
         $hash = password_hash($password, PASSWORD_DEFAULT);

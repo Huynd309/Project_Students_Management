@@ -12,15 +12,7 @@ $back_url = "student_list.php";
 if ($ref_lop_id) {
     $back_url .= "?lop_id=" . $ref_lop_id;
 }
-$host = '127.0.0.1';
-$port = '5432';
-$dbname = 'Student_Information';
-$user_db = 'postgres';
-$password_db = 'Ngohuy3092005';
-$dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-$conn = new PDO($dsn, $user_db, $password_db);
-$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
+require_once 'db_config.php';
 // Query 1
 $stmt_info = $conn->prepare("SELECT * FROM diem_hoc_sinh WHERE so_bao_danh = ?");
 $stmt_info->execute([$sbd]);

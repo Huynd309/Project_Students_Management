@@ -1,22 +1,17 @@
 <?php
 session_start();
 
+require_once 'db_config.php';
 if (!isset($_GET['sbd']) || !isset($_GET['lop_id'])) {
     die('Vui lòng cung cấp số báo danh và lớp.');
 }
 $sbd = $_GET['sbd'];
 $lop_id = $_GET['lop_id'];
 
-$host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-$user = 'postgres'; $password = 'Ngohuy3092005';
-$dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-
 $hocsinh = null;
 $diem_chi_tiet = [];
-
+$comment_history = [];
 try {
-    $conn = new PDO($dsn, $user, $password);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 //Query 1
     $stmt_info = $conn->prepare("
         SELECT

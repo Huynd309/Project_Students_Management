@@ -1,6 +1,5 @@
 <?php
 session_start();
-// --- (TOÀN BỘ CODE PHP Ở TRÊN CÙNG GIỮ NGUYÊN) ---
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     die("TRUY CẬP BỊ TỪ CHỐI!");
 }
@@ -13,13 +12,7 @@ $class_name = "";
 $lesson_title_report = "";
 
 try {
-    // --- (TOÀN BỘ KHỐI TRY...CATCH GIỮ NGUYÊN) ---
-    $host = '127.0.0.1'; $port = '5432'; $dbname = 'Student_Information';
-    $user_db = 'postgres'; $password_db = 'Ngohuy3092005';
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    
-    $conn = new PDO($dsn, $user_db, $password_db);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    require_once 'db_config.php';
     
     $stmt_classes = $conn->prepare("SELECT id, ten_lop FROM lop_hoc ORDER BY ten_lop ASC");
     $stmt_classes->execute();
