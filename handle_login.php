@@ -4,30 +4,15 @@ session_start();
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     $username = $_POST['username'];
-    $password = $_POST['password']; 
+    $password = $_POST['login_password']; 
 
     require_once 'db_config.php';
 
     try {
-
         $sql = "SELECT * FROM users WHERE username = ?";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        //Debug 
-        if (!$user) {
-        die("Lỗi: Không tìm thấy user <strong>" . htmlspecialchars($username) . "</strong> trong Database trên Render.");
-    }
-
-        echo "<h3>Debug Thông Tin:</h3>";
-        echo "User nhập vào: " . htmlspecialchars($username) . "<br>";
-        echo "Pass nhập vào: " . htmlspecialchars($password) . "<br>";
-        echo "Hash trong DB: " . htmlspecialchars($user['password_hash']) . "<br>";
-
-        $check = password_verify($password, $user['password_hash']);
-        echo "Kết quả so khớp: " . ($check ? "TRÙNG KHỚP (True)" : "KHÔNG KHỚP (False)");
-        die();
 
         if ($user && password_verify($password, $user['password_hash'])) {
             
