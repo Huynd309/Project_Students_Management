@@ -33,7 +33,7 @@ session_start();
             
             <div class="form-group">
                 <label for="password">Mật khẩu:</label>
-                <input type="password" id="password" name="login_password" class="form-input" required autocomplete="new-password">
+                <input type="password" id="password" name="login_password" class="form-input" required autocomplete="off">
             </div>
             
             <button type="submit" class="auth-button">Đăng nhập</button>
