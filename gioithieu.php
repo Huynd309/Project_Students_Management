@@ -11,9 +11,6 @@ if (isset($_GET['sbd_tra_cuu'])) {
     require_once 'db_config.php';
 
     try {
-        $conn = new PDO($dsn, $user_db, $password_db);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
         $sql = "
             SELECT
                 lh.id,
@@ -54,62 +51,59 @@ if (isset($_GET['sbd_tra_cuu'])) {
     <title>Giới thiệu & Tra cứu</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="admin-page-blue">
-    
+    </head>
+<body>
     <header class="header">
         <div class="logo">
-            <a class="logo-link"> <h2>Hệ thống tra cứu điểm học sinh</h2> </a>
+            <a class="logo-link"> <h2>Hệ thống tra cứu điểm học sinh</h2>
+            </a>
         </div>
-        
+        <nav class="nav">
+            <ul>
+                <li><a href="gioithieu.php">Trang chủ</a></li>
+                <li><a href="gioithieu.php">Giới thiệu</a></li> <li><a href="#">Liên hệ</a></li>
+            </ul>
+        </nav>
         <div class="auth-buttons">
-            <div class="theme-switch-wrapper" style="margin-right: 20px;">
-                <label class="theme-switch" for="checkbox">
-                    <input type="checkbox" id="checkbox" />
-                    <div class="slider round"></div>
-                </label>
-            </div>
-
             <?php if (isset($_SESSION['username'])): ?>
                 <span style="color: #333; margin-right: 15px;">
                     Chào, <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>!
                 </span>
-                <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true): ?>
-                    <a href="admin.php"><button class="submit-btn-alt" style="width: auto; padding: 8px 15px; margin-top:0;">Trang quản trị</button></a>
+                <?php if ($_SESSION['is_admin'] === true): ?>
+                    <a href="admin.php"><button id="login-btn">Quay lại trang quản trị</button></a>
                 <?php endif; ?>
-                <a href="logout.php"><button class="btn-header-logout">Đăng xuất</button></a>
+                <a href="logout.php"><button id="login-btn">Đăng xuất</button></a>
             <?php else: ?>
-                <a href="login.php"><button class="submit-btn" style="width: auto; padding: 8px 20px; margin-top:0;">Đăng nhập</button></a>
+                <a href="login.php"><button id="login-btn">Đăng nhập</button></a>
             <?php endif; ?>
         </div>
     </header>
-
     <main class="container">
         
         <h1>Tra cứu điểm</h1>
-        <p>Nhập mã học sinh (SBD) để xem chi tiết điểm số.</p>
         
         <form class="search-box" action="" method="GET">
+           <label for="student-id">Vui lòng nhập mã học sinh:</label>
            <input type="text" id="student-id" name="sbd_tra_cuu" placeholder="Ví dụ: HS1001" 
-                  value="<?php echo htmlspecialchars($sbd_tra_cuu); ?>" required />
+                  value="<?php echo htmlspecialchars($sbd_tra_cuu); ?>" />
            <button type="submit">Tra cứu</button>
         </form>
 
         <?php if ($error_message): ?>
-            <div class="error-msg">
+            <div style="color: red; padding: 10px; border: 1px solid red; margin-top: 20px;">
                 <?php echo $error_message; ?>
             </div>
         <?php endif; ?>
 
         <?php if (count($cac_lop) > 1): ?>
-            <div class="lookup-widget" style="margin-top: 30px; text-align: center;">
-                <h3 style="margin-top: 0;">Tìm thấy <?php echo count($cac_lop); ?> lớp cho SBD "<?php echo htmlspecialchars($sbd_tra_cuu); ?>"</h3>
-                <p style="margin-bottom: 15px;">Vui lòng chọn lớp bạn muốn xem điểm:</p>
+            <div style="background-color: #f3f3f3; padding: 20px; margin-top: 20px; border-radius: 8px;">
+                <h3>Hệ thống tìm thấy nhiều lớp cho SBD "<?php echo htmlspecialchars($sbd_tra_cuu); ?>"</h3>
+                <p>Vui lòng chọn lớp bạn muốn xem điểm:</p>
                 
-                <form action="details.php" method="GET" class="filter-form" style="justify-content: center;">
+                <form action="details.php" method="GET">
                     <input type="hidden" name="sbd" value="<?php echo htmlspecialchars($sbd_tra_cuu); ?>">
                     
-                    <select name="lop_id" required>
+                    <select name="lop_id" style="padding: 10px; font-size: 1em;">
                         <?php foreach ($cac_lop as $lop): ?>
                             <option value="<?php echo $lop['id']; ?>">
                                 <?php echo htmlspecialchars($lop['ten_lop']); ?>
@@ -117,36 +111,31 @@ if (isset($_GET['sbd_tra_cuu'])) {
                         <?php endforeach; ?>
                     </select>
                     
-                    <button type="submit">Xem điểm</button>
+                    <button type="submit" style="padding: 10px;">Xem điểm</button>
                 </form>
             </div>
         <?php endif; ?>
         
-        <hr style="margin: 40px 0; border-color: var(--border-color); opacity: 0.5;">
-        
-        <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; text-align: center;">
-             <div>
-                 <h4><i class="fas fa-building-columns" style="color: var(--primary-color);"></i> Về chúng tôi</h4>
-                 <p style="font-size: 0.9em;">Hệ thống tra cứu điểm và quản lý học tập<br>dành cho học sinh và giáo viên.</p>
-             </div>
-             <div>
-                 <h4><i class="fas fa-map-marker-alt" style="color: var(--primary-color);"></i> Địa chỉ</h4>
-                 <p style="font-size: 0.9em;">136 đường Xuân Thuỷ, Phường Cầu Giấy,<br>thành phố Hà Nội</p>
-             </div>
-             <div>
-                 <h4><i class="fas fa-phone" style="color: var(--primary-color);"></i> Liên hệ</h4>
-                 <p style="font-size: 0.9em;"><strong>Hotline:</strong> 0961223066<br><strong>Email:</strong> ngohuy3092005@gmail.com</p>
-             </div>
-        </div>
-
-    </main>
-
+        <hr style="margin: 40px 0;">
+        </main>
     <footer class="footer">
-        <div class="footer-bottom" style="text-align: center;">
-            <p>© Copyright by: Ngô Dương Huy</p>
+        <div class="footer-column">
+            <h4><i class="fas fa-building-columns"></i> Về chúng tôi</h4>
+            <p>Hệ thống tra cứu điểm và quản lý học tập dành cho học sinh.</p>
+        </div>
+        
+        <div class="footer-column">
+            <h4><i class="fas fa-map-marker-alt"></i> Địa chỉ</h4>
+            <p>136 đường Xuân Thuỷ, Phường Cầu Giấy, thành phố Hà Nội</p>
+        </div>
+        
+        <div class="footer-column">
+            <h4><i class="fas fa-phone"></i> Liên hệ</h4>
+            <p><strong>© Copyright by:</strong> Ngô Dương Huy </p>
+            <p><strong>Điện thoại:</strong> 0961223066</p>
+            <p><strong>Email:</strong> ngohuy3092005@gmail.com</p>
         </div>
     </footer>
-
-    <script src="admin_main.js"></script>
-</body>
+    </body>
+    </body>
 </html>
