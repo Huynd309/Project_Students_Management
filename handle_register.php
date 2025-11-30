@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['is_admin']) || $_SESSION['
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     $username = $_POST['username'];
-    $password = $_POST['password'];
+    $password = $_POST['login_password'];
 
     $is_admin = (isset($_POST['is_admin']) && $_POST['is_admin'] == '1');
 
