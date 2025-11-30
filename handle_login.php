@@ -14,23 +14,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        echo "<h1>CHẾ ĐỘ DEBUG LỖI ĐĂNG NHẬP</h1>";
-        echo "User nhập vào: [" . $username . "]<br>";
-        echo "Pass nhập vào: [" . $password . "] (Độ dài: " . strlen($password) . ")<br>";
-        echo password_hash("eWUnUvqHuTW2mBe8nj1VvebQFQNHxup4", PASSWORD_DEFAULT);
+        // echo "<h1>CHẾ ĐỘ DEBUG LỖI ĐĂNG NHẬP</h1>";
+        // echo "User nhập vào: [" . $username . "]<br>";
+        // echo "Pass nhập vào: [" . $password . "] (Độ dài: " . strlen($password) . ")<br>";
+        // echo password_hash("eWUnUvqHuTW2mBe8nj1VvebQFQNHxup4", PASSWORD_DEFAULT);
 
         
-        if ($user) {
-            echo "Hash trong DB: [" . $user['password_hash'] . "] (Độ dài: " . strlen($user['password_hash']) . ")<br>";
+        // if ($user) {
+        //     echo "Hash trong DB: [" . $user['password_hash'] . "] (Độ dài: " . strlen($user['password_hash']) . ")<br>";
             
-            $check = password_verify($password, $user['password_hash']);
-            echo "Kết quả password_verify: ";
-            var_dump($check);
-        } else {
-            echo "Không tìm thấy user trong Database!<br>";
-        }
+        //     $check = password_verify($password, $user['password_hash']);
+        //     echo "Kết quả password_verify: ";
+        //     var_dump($check);
+        // } else {
+        //     echo "Không tìm thấy user trong Database!<br>";
+        // }
         
-        die();
+        // die();
 
         if ($user && password_verify($password, $user['password_hash'])) {
             
