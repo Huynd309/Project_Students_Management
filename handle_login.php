@@ -14,6 +14,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        echo "<h1>CHẾ ĐỘ DEBUG LỖI ĐĂNG NHẬP</h1>";
+        echo "User nhập vào: [" . $username . "]<br>";
+        echo "Pass nhập vào: [" . $password . "] (Độ dài: " . strlen($password) . ")<br>";
+        
+        if ($user) {
+            echo "Hash trong DB: [" . $user['password_hash'] . "] (Độ dài: " . strlen($user['password_hash']) . ")<br>";
+            
+            $check = password_verify($password, $user['password_hash']);
+            echo "Kết quả password_verify: ";
+            var_dump($check);
+        } else {
+            echo "Không tìm thấy user trong Database!<br>";
+        }
+        
+        die();
+
         if ($user && password_verify($password, $user['password_hash'])) {
             
             $_SESSION['user_id'] = $user['id'];
