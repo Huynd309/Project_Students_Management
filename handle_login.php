@@ -17,6 +17,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo "<h1>CHẾ ĐỘ DEBUG LỖI ĐĂNG NHẬP</h1>";
         echo "User nhập vào: [" . $username . "]<br>";
         echo "Pass nhập vào: [" . $password . "] (Độ dài: " . strlen($password) . ")<br>";
+        echo password_hash("eWUnUvqHuTW2mBe8nj1VvebQFQNHxup4", PASSWORD_DEFAULT);
+
         
         if ($user) {
             echo "Hash trong DB: [" . $user['password_hash'] . "] (Độ dài: " . strlen($user['password_hash']) . ")<br>";
