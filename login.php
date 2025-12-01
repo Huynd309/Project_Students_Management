@@ -40,7 +40,7 @@ session_start();
         </form>
 
         <div class="auth-link">
-            <p>Chưa có tài khoản? <a href="#"> Liên hệ với quản trị viên</a></p>
+            <p>Chưa có tài khoản? <a href="https://www.facebook.com/huyngo309"> Liên hệ với quản trị viên</a></p>
             <p><a href="gioithieu.php">Quay lại trang Giới thiệu</a></p>
         </div>
     </div>
