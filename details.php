@@ -218,6 +218,7 @@ $conn = null;
         <footer class="footer">
         <div class="footer-column">
             <h4><i class="fas fa-building-columns"></i> Về chúng tôi</h4>
+            <p>Designed and Developed by Ngô Dương Huy.</p>
             <p>Hệ thống tra cứu điểm và quản lý học tập dành cho học sinh.</p>
         </div>
         
