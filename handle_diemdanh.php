@@ -23,14 +23,12 @@ $monthly_points = [];
 
     require_once 'db_config.php';
 try {
-    // Query 1: Lấy tên lớp
     $stmt_class = $conn->prepare("SELECT ten_lop FROM lop_hoc WHERE id = ?");
     $stmt_class->execute([$lop_id]);
     $class_info = $stmt_class->fetch(PDO::FETCH_ASSOC);
 
     if (!$class_info) { die("Không tìm thấy lớp này."); }
 
-    // Query 2: Lấy danh sách học sinh
     $stmt_students = $conn->prepare("
         SELECT dhs.so_bao_danh, dhs.ho_ten
         FROM diem_hoc_sinh AS dhs
@@ -42,7 +40,6 @@ try {
     $stmt_students->execute([$lop_id]);
     $students_list = $stmt_students->fetchAll(PDO::FETCH_ASSOC);
 
-    // Query 3: Lấy trạng thái điểm danh CỦA NGÀY HÔM ĐÓ
     $stmt_status = $conn->prepare("
         SELECT so_bao_danh, trang_thai 
         FROM diem_danh 
@@ -54,7 +51,6 @@ try {
     foreach ($statuses as $status) {
         $saved_statuses[$status['so_bao_danh']] = $status['trang_thai'];
     }
-    // Query 4: Tính điểm chuyên cần THÁNG HIỆN TẠI
     $current_month = date('m', strtotime($ngay_diem_danh));
     $current_year = date('Y', strtotime($ngay_diem_danh));
 
@@ -259,7 +255,7 @@ try {
                     <?php else: ?>
                         <?php foreach ($students_list as $index => $student): ?>
                             <?php
-                                $current_status = $saved_statuses[$student['so_bao_danh']] ?? 'present';
+                                $current_status = $saved_statuses[$student['so_bao_danh']] ?? null;
                                 $points = $monthly_points[$student['so_bao_danh']] ?? 0;
                             ?>
                             <tr>

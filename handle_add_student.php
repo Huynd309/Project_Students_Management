@@ -43,7 +43,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Không thể tìm thấy hoặc tạo user.");
         }
 
-        $sql_enroll = "INSERT INTO user_lop (user_id, lop_hoc_id) VALUES (?, ?)";
+        $sql_enroll = "INSERT INTO user_lop (user_id, lop_hoc_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
         $stmt_enroll = $conn->prepare($sql_enroll);
         $stmt_enroll->execute([$new_user_id, $lop_id]);
 
