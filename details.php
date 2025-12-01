@@ -185,9 +185,41 @@ $conn = null;
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const diemData = <?php echo json_encode($diem_chi_tiet); ?>;
-        const labels = diemData.map(d => d.ngay_kiem_tra);
-        const studentScores = diemData.map(d => d.diem_so);
+    
+        const labels = diemData.map(d => d.ngay_kiem_tra + ' (' + d.ten_cot_diem + ')');
+        const studentScores = diemData.map(d => parseFloat(d.diem_so));
         const classAvgScores = diemData.map(d => parseFloat(d.diem_trung_binh_lop).toFixed(2));
+
+        function calculateLinearRegression(yValues) {
+            const n = yValues.length;
+            if (n === 0) return [];
+
+            let sumX = 0;
+            let sumY = 0;
+            let sumXY = 0;
+            let sumXX = 0;
+
+            for (let i = 0; i < n; i++) {
+                sumX += i;
+                sumY += yValues[i];
+                sumXY += i * yValues[i];
+                sumXX += i * i;
+            }
+
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+
+            const regressionLine = [];
+            for (let i = 0; i < n; i++) {
+                let val = slope * i + intercept;
+                val = Math.max(0, Math.min(10, val)); 
+                regressionLine.push(val);
+            }
+
+            return regressionLine;
+        }
+
+        const trendData = calculateLinearRegression(studentScores);
 
         const ctx = document.getElementById('myChart');
         new Chart(ctx, {
@@ -198,19 +230,58 @@ $conn = null;
                     {
                         label: 'Điểm của học sinh',
                         data: studentScores,
-                        borderColor: 'rgb(75, 192, 192)',
-                        tension: 0.1,
-                        borderWidth: 3
+                        borderColor: 'rgb(75, 192, 192)', 
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.3, 
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        order: 2 
+                    },
+                    {
+                        label: 'Hồi quy tuyến tính',
+                        data: trendData,
+                        borderColor: 'rgb(255, 159, 64)', 
+                        borderWidth: 2,
+                        borderDash: [10, 5], 
+                        pointRadius: 0, 
+                        fill: false,
+                        tension: 0, 
+                        order: 1
                     },
                     {
                         label: 'Trung bình lớp',
                         data: classAvgScores,
-                        borderColor: 'rgb(255, 99, 132)',
-                        tension: 0.1,
-                        borderWidth: 1.5,
-                        borderDash: [5, 5]
+                        borderColor: 'rgb(255, 99, 132)', 
+                        borderWidth: 1,
+                        borderDash: [5, 5], 
+                        pointRadius: 2,
+                        tension: 0.3,
+                        order: 3 
                     }
                 ]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 10,
+                        title: {
+                            display: true,
+                            text: 'Điểm số'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Biểu đồ phát triển năng lực học sinh'
+                    }
+                }
             }
         });
     </script>
