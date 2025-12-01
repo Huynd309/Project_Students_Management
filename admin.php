@@ -313,6 +313,7 @@ if ($filter_khoi) {
         <label for="filterKhoi" style="font-weight: bold;">Lọc theo khối:</label>
         <select id="filterKhoi" style="padding: 5px;">
             <option value="">-- Tất cả khối --</option>
+            <option value="9">Khối 9</option>
             <option value="10">Khối 10</option>
             <option value="11">Khối 11</option>
             <option value="12">Khối 12</option>
@@ -373,6 +374,7 @@ if ($filter_khoi) {
                     <label for="filterUserKhoi" style="font-weight: bold;">Lọc User theo khối:</label>
                     <select id="filterUserKhoi" style="padding: 5px;">
                         <option value="">-- Tất cả khối --</option>
+                        <option value="9">Khối 9</option>
                         <option value="10">Khối 10</option>
                         <option value="11">Khối 11</option>
                         <option value="12">Khối 12</option>
