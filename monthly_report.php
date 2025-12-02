@@ -17,11 +17,9 @@ try {
     $user_role = $_SESSION['role'] ?? 'admin'; 
 
     if ($user_role === 'super') {
-        // Super Admin: Lấy hết
         $stmt_classes = $conn->prepare("SELECT id, ten_lop FROM lop_hoc ORDER BY ten_lop ASC");
         $stmt_classes->execute();
     } else {
-        // Sub Admin: Chỉ lấy lớp được phân quyền
         $stmt_classes = $conn->prepare("
             SELECT lh.id, lh.ten_lop 
             FROM lop_hoc lh
@@ -228,7 +226,7 @@ try {
                                     <td>
                                         <textarea class="comment-box" 
                                                   name="nhanxet[<?php echo htmlspecialchars($row['so_bao_danh']); ?>]" 
-                                                  placeholder="Nhập nhận xét..."><?php echo htmlspecialchars($row['nhan_xet']); ?></textarea>
+                                                  placeholder="Nhập nhận xét..."><?php echo htmlspecialchars($row['nhan_xet'] ?? ''); ?></textarea>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
