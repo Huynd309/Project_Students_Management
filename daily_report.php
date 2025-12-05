@@ -290,7 +290,7 @@ function getTrangThaiText($status) {
                         <th style="width: 150px;">Họ đệm</th>
                         <th style="width: 80px;">Tên</th>
                         <th style="width: 100px;">Trạng thái</th>
-                        <th style="width: 70px;">Điểm CC</th>
+                        <th style="width: 70px;">Điểm Chuyên Cần</th>
                         <th style="width: 70px;">Điểm Test</th>
                         <th style="width: 70px;">Điểm BTVN</th>
                         <th style="width: 90px; background-color: rgba(0, 123, 255, 0.1);">Điểm Tích Lũy</th>
