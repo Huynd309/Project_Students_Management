@@ -194,7 +194,6 @@ if ($filter_khoi) {
                 <ul class="dropdown-menu">
                     <li><a href="gioithieu.php">Tra cứu điểm học sinh</a></li>
                     <li><a href="student_list.php">Danh sách học sinh</a></li>
-                    <li><a href="add_scores.php">Quản lý điểm thành phần</a></li>
                     <li><a href="diemdanh.php">Điểm danh học sinh</a></li>
                     <li><a href="daily_report.php">Báo cáo hàng ngày</a></li>
                     <li><a href="monthly_report.php">Báo cáo hàng tháng</a></li>

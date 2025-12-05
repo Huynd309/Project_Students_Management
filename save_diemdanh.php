@@ -5,47 +5,62 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['is_admin']) || $_SESSION['
 }
 
 if ($_SERVER["REQUEST_METHOD"] != "POST") {
-    die("Phương thức truy cập không hợp lệ.");
+    die("Phương thức không hợp lệ.");
 }
 
 $lop_id = $_POST['lop_id'];
 $ngay_diem_danh = $_POST['ngay_diem_danh'];
-$lesson_title = $_POST['lesson_title'] ?? ''; 
-$statuses = $_POST['status'] ?? [];
+$lesson_title = $_POST['lesson_title'];
+$statuses = $_POST['status'] ?? [];     
+$scores_test = $_POST['scores_test'] ?? []; 
+$scores_btvn = $_POST['scores_btvn'] ?? []; 
 
 $redirect_url = "handle_diemdanh.php?lop_id=$lop_id&ngay=$ngay_diem_danh&lesson_title=" . urlencode($lesson_title);
 
-if (empty($statuses)) {
-    header("Location: $redirect_url");
-    exit;
-}
+require_once 'db_config.php';
 
 try {
-    require_once 'db_config.php';
+    $conn->beginTransaction(); 
 
-    $conn->beginTransaction();
-
-    $sql = "
+    $sql_dd = "
         INSERT INTO diem_danh (so_bao_danh, lop_id, ngay_diem_danh, trang_thai, lesson_title)
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT (so_bao_danh, lop_id, ngay_diem_danh)
-        DO UPDATE SET 
-            trang_thai = EXCLUDED.trang_thai,
-            lesson_title = EXCLUDED.lesson_title
+        DO UPDATE SET trang_thai = EXCLUDED.trang_thai, lesson_title = EXCLUDED.lesson_title
     ";
-    $stmt = $conn->prepare($sql);
+    $stmt_dd = $conn->prepare($sql_dd);
 
-    foreach ($statuses as $so_bao_danh => $trang_thai) {
-        $stmt->execute([$so_bao_danh, $lop_id, $ngay_diem_danh, $trang_thai, $lesson_title]);
+    foreach ($statuses as $sbd => $trang_thai) {
+        $stmt_dd->execute([$sbd, $lop_id, $ngay_diem_danh, $trang_thai, $lesson_title]);
+    }
+
+    if (!empty($lesson_title)) {
+        $sql_score = "
+            INSERT INTO diem_thanh_phan (so_bao_danh, lop_id, ngay_kiem_tra, ten_cot_diem, diem_so, diem_btvn)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT (so_bao_danh, lop_id, ngay_kiem_tra, ten_cot_diem)
+            DO UPDATE SET 
+                diem_so = EXCLUDED.diem_so,
+                diem_btvn = EXCLUDED.diem_btvn
+        ";
+        $stmt_score = $conn->prepare($sql_score);
+
+        foreach ($statuses as $sbd => $trang_thai) {
+            $test = $scores_test[$sbd] ?? null;
+            $btvn = $scores_btvn[$sbd] ?? null;
+            
+            if ($test !== null || $btvn !== null) {
+                $stmt_score->execute([$sbd, $lop_id, $ngay_diem_danh, $lesson_title, $test, $btvn]);
+            }
+        }
     }
 
     $conn->commit();
-
     header("Location: $redirect_url&save=success");
     exit;
 
 } catch (PDOException $e) {
     $conn->rollBack();
-    die("Lỗi khi lưu điểm danh: " . $e->getMessage());
+    die("Lỗi khi lưu dữ liệu: " . $e->getMessage());
 }
 ?>

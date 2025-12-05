@@ -1588,6 +1588,7 @@ td a.btn-delete:active {
     color: white;
     box-shadow: 0 4px 8px rgba(0, 104, 255, 0.4);
 }
+
 @media print {
     
     body * {
