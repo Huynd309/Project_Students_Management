@@ -20,7 +20,10 @@ $students_list = [];
 $class_info = null;
 $saved_statuses = []; 
 $monthly_points = [];
-$saved_scores = []; // Mảng lưu điểm đã có
+$saved_scores = []; 
+
+$current_title = $lesson_title;
+$current_desc = "";
 
 require_once 'db_config.php';
 
@@ -44,22 +47,32 @@ try {
     $stmt_students->execute([$lop_id]);
     $students_list = $stmt_students->fetchAll(PDO::FETCH_ASSOC);
 
-    // Query 3: Lấy trạng thái điểm danh cũ
+    // Query 3: Lấy thông tin bài học & điểm danh cũ
+    $stmt_info = $conn->prepare("SELECT lesson_title, lesson_description FROM diem_danh WHERE lop_id = ? AND ngay_diem_danh = ? LIMIT 1");
+    $stmt_info->execute([$lop_id, $ngay_diem_danh]);
+    $info_row = $stmt_info->fetch(PDO::FETCH_ASSOC);
+
+    if ($info_row) {
+        $current_title = $info_row['lesson_title']; 
+        $current_desc = $info_row['lesson_description'];
+    }
+
     $stmt_status = $conn->prepare("SELECT so_bao_danh, trang_thai FROM diem_danh WHERE lop_id = ? AND ngay_diem_danh = ?");
     $stmt_status->execute([$lop_id, $ngay_diem_danh]);
     foreach ($stmt_status->fetchAll(PDO::FETCH_ASSOC) as $s) {
         $saved_statuses[$s['so_bao_danh']] = $s['trang_thai'];
     }
 
-    // Query 4: Lấy điểm số cũ (Test & BTVN) - QUAN TRỌNG MỚI
-    // Chúng ta giả định 'ten_cot_diem' chính là 'lesson_title'
-    $stmt_scores = $conn->prepare("SELECT so_bao_danh, diem_so, diem_btvn FROM diem_thanh_phan WHERE lop_id = ? AND ngay_kiem_tra = ? AND ten_cot_diem = ?");
-    $stmt_scores->execute([$lop_id, $ngay_diem_danh, $lesson_title]);
-    foreach ($stmt_scores->fetchAll(PDO::FETCH_ASSOC) as $sc) {
-        $saved_scores[strtolower($sc['so_bao_danh'])] = [
-            'test' => $sc['diem_so'],
-            'btvn' => $sc['diem_btvn']
-        ];
+    // Query 4: Lấy điểm số cũ
+    if (!empty($current_title)) {
+        $stmt_scores = $conn->prepare("SELECT so_bao_danh, diem_so, diem_btvn FROM diem_thanh_phan WHERE lop_id = ? AND ngay_kiem_tra = ? AND ten_cot_diem = ?");
+        $stmt_scores->execute([$lop_id, $ngay_diem_danh, $current_title]);
+        foreach ($stmt_scores->fetchAll(PDO::FETCH_ASSOC) as $sc) {
+            $saved_scores[strtolower($sc['so_bao_danh'])] = [
+                'test' => $sc['diem_so'],
+                'btvn' => $sc['diem_btvn']
+            ];
+        }
     }
 
     // Query 5: Tính điểm chuyên cần tháng
@@ -88,34 +101,64 @@ try {
     <title>Điểm danh & Nhập điểm</title>
     <link rel="stylesheet" href="style.css"> 
     <style>
-        /* === CSS INLINE CHO Ô NHẬP ĐIỂM === */
-        .score-input-mini {
-            width: 60px !important;       /* Cố định chiều rộng nhỏ */
-            padding: 8px 5px !important;  /* Padding nhỏ gọn */
-            text-align: center;           /* Căn giữa số */
-            font-weight: bold;
-            margin-bottom: 0 !important;  /* Bỏ margin thừa */
-            display: inline-block;
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 10px; 
+            box-sizing: border-box;
             
-            /* Hiệu ứng kính mờ */
-            background-color: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.2); 
             color: var(--text-color);
+            
+            font-size: 1em;
+            font-family: inherit;
+            
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             outline: none;
-            transition: 0.3s;
+            transition: all 0.3s ease;
         }
-        
-        .score-input-mini:focus {
+        .form-input:focus {
             background-color: rgba(255, 255, 255, 0.4);
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
         }
+        textarea.form-input {
+            min-height: 60px;
+            resize: vertical;
+        }
 
-        /* Các style khác */
+        .score-input-mini {
+            width: 80px !important;
+            padding: 8px 10px !important;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1em;
+            margin: 0 auto !important;
+            display: block;
+            
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: var(--text-color);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .score-input-mini:focus {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.2);
+            transform: scale(1.05);
+        }
+
         th, td { vertical-align: middle; }
-        .points-cell { font-weight: 700; color: var(--primary-color); text-align: center; }
+        th { text-align: center; }
+        .points-cell { font-weight: 700; color: var(--primary-color); text-align: center; font-size: 1.1em; }
         
+        .radio-group { display: flex; justify-content: center; gap: 15px; }
         .radio-group input[type="radio"][value="late"]:checked + label { color: #fd7e14; font-weight: bold; }
         [data-theme="dark"] .radio-group input[type="radio"][value="late"]:checked + label { color: #ffb74d; }
     </style>
@@ -135,7 +178,8 @@ try {
         </div>
     </header>
 
-    <main class="container" style="max-width: 1300px;"> <h2>Bảng điểm danh & Nhập điểm</h2>
+    <main class="container" style="max-width: 1300px;">
+        <h2>Bảng điểm danh & Nhập điểm</h2>
         
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
             <div>
@@ -158,18 +202,28 @@ try {
         <form action="save_diemdanh.php" method="POST">
             <input type="hidden" name="lop_id" value="<?php echo htmlspecialchars($lop_id); ?>">
             <input type="hidden" name="ngay_diem_danh" value="<?php echo htmlspecialchars($ngay_diem_danh); ?>">
-            <input type="hidden" name="lesson_title" value="<?php echo htmlspecialchars($lesson_title); ?>">
+
+            <div style="margin-bottom: 20px; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.3);">
+                
+                <label style="font-weight: bold; font-size: 1.1em; margin-bottom: 8px; display: block;">Tiêu đề bài học:</label>
+                <input type="text" name="lesson_title" value="<?php echo htmlspecialchars($current_title); ?>" 
+                       class="form-input" required placeholder="Nhập tên bài học...">
+                
+                <label style="font-weight: bold; font-size: 1.1em; margin-bottom: 8px; display: block;">Mô tả bài học:</label>
+                <textarea name="lesson_description" rows="3" 
+                          class="form-input" placeholder="Nhập nội dung chi tiết..."><?php echo htmlspecialchars($current_desc); ?></textarea>
+            </div>
 
             <table>
                 <thead>
                     <tr>
                         <th style="width: 40px;">STT</th>
                         <th style="width: 80px;">SBD</th>
-                        <th>Họ và tên</th>
-                        <th style="width: 80px; text-align: center;">CC (Tháng)</th>
+                        <th style="text-align: left;">Họ và tên</th>
+                        <th style="width: 80px;">CC (Tháng)</th>
                         <th>Trạng thái đi học</th>
-                        <th style="width: 100px; text-align: center;">Điểm Test</th>
-                        <th style="width: 100px; text-align: center;">Điểm BTVN</th>
+                        <th style="width: 100px;">Điểm Test</th>
+                        <th style="width: 100px;">Điểm BTVN</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -179,18 +233,19 @@ try {
                         <?php foreach ($students_list as $index => $student): ?>
                             <?php
                                 $sbd_key = strtolower($student['so_bao_danh']);
-                                // Trạng thái điểm danh
                                 $current_status = $saved_statuses[$student['so_bao_danh']] ?? null;
-                                
-                                // Điểm CC
                                 $points = $monthly_points[$student['so_bao_danh']] ?? 0;
                                 
-                                // Điểm số (Nếu có trong DB thì lấy, không thì lấy mặc định 5 và 10)
-                                $score_test = isset($saved_scores[$sbd_key]['test']) ? $saved_scores[$sbd_key]['test'] : 5;
-                                $score_btvn = isset($saved_scores[$sbd_key]['btvn']) ? $saved_scores[$sbd_key]['btvn'] : 10;
+                                if (isset($saved_scores[$sbd_key])) {
+                                    $score_test = $saved_scores[$sbd_key]['test'];
+                                    $score_btvn = $saved_scores[$sbd_key]['btvn'];
+                                } else {
+                                    $score_test = 5;
+                                    $score_btvn = 10;
+                                }
                             ?>
                             <tr>
-                                <td><?php echo $index + 1; ?></td>
+                                <td style="text-align: center;"><?php echo $index + 1; ?></td>
                                 <td><?php echo htmlspecialchars($student['so_bao_danh']); ?></td>
                                 <td><?php echo htmlspecialchars($student['ho_ten']); ?></td>
                                 
@@ -204,13 +259,13 @@ try {
                                     </span>
                                 </td>
                                 
-                                <td style="text-align: center;">
+                                <td>
                                     <input type="number" step="0.01" min="0" max="10" class="score-input-mini" 
                                            name="scores_test[<?php echo $student['so_bao_danh']; ?>]" 
                                            value="<?php echo $score_test; ?>">
                                 </td>
 
-                                <td style="text-align: center;">
+                                <td>
                                     <input type="number" step="0.01" min="0" max="10" class="score-input-mini" 
                                            name="scores_btvn[<?php echo $student['so_bao_danh']; ?>]" 
                                            value="<?php echo $score_btvn; ?>">
