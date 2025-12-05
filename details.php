@@ -183,21 +183,22 @@ $conn = null;
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        const diemData = <?php echo json_encode($diem_chi_tiet); ?>;
     
+    <script>
+        // 1. Lấy dữ liệu từ PHP
+        const diemData = <?php echo json_encode($diem_chi_tiet); ?>;
+        
+        // Chuẩn bị dữ liệu trục X và Y
         const labels = diemData.map(d => d.ngay_kiem_tra + ' (' + d.ten_cot_diem + ')');
         const studentScores = diemData.map(d => parseFloat(d.diem_so));
         const classAvgScores = diemData.map(d => parseFloat(d.diem_trung_binh_lop).toFixed(2));
 
+        // 2. HÀM TÍNH TOÁN HỒI QUY TUYẾN TÍNH (Giữ nguyên)
         function calculateLinearRegression(yValues) {
             const n = yValues.length;
             if (n === 0) return [];
 
-            let sumX = 0;
-            let sumY = 0;
-            let sumXY = 0;
-            let sumXX = 0;
+            let sumX = 0; let sumY = 0; let sumXY = 0; let sumXX = 0;
 
             for (let i = 0; i < n; i++) {
                 sumX += i;
@@ -215,7 +216,6 @@ $conn = null;
                 val = Math.max(0, Math.min(10, val)); 
                 regressionLine.push(val);
             }
-
             return regressionLine;
         }
 
@@ -230,61 +230,71 @@ $conn = null;
                     {
                         label: 'Điểm của học sinh',
                         data: studentScores,
-                        borderColor: 'rgb(75, 192, 192)', 
+                        borderColor: 'rgb(75, 192, 192)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        tension: 0.3, 
+                        tension: 0, 
                         borderWidth: 3,
-                        pointRadius: 5,
-                        order: 2 
+                        pointRadius: 6, 
+                        pointHoverRadius: 8,
+                        order: 2
                     },
                     {
                         label: 'Hồi quy tuyến tính',
                         data: trendData,
-                        borderColor: 'rgb(255, 159, 64)', 
+                        borderColor: 'rgb(255, 159, 64)',
                         borderWidth: 2,
-                        borderDash: [10, 5], 
+                        borderDash: [10, 5],
                         pointRadius: 0, 
                         fill: false,
-                        tension: 0, 
+                        tension: 0,
                         order: 1
                     },
                     {
                         label: 'Trung bình lớp',
                         data: classAvgScores,
-                        borderColor: 'rgb(255, 99, 132)', 
-                        borderWidth: 1,
-                        borderDash: [5, 5], 
-                        pointRadius: 2,
-                        tension: 0.3,
-                        order: 3 
+                        borderColor: 'rgb(153, 102, 255)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        tension: 0,
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        order: 3
                     }
                 ]
             },
             options: {
                 responsive: true,
+
                 interaction: {
-                    mode: 'index',
-                    intersect: false,
+                    mode: 'point', 
+                    intersect: true,
                 },
+                
                 scales: {
                     y: {
                         min: 0,
                         max: 10,
-                        title: {
-                            display: true,
-                            text: 'Điểm số'
-                        }
+                        title: { display: true, text: 'Điểm số' }
                     }
                 },
+                
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Biểu đồ phát triển năng lực học sinh'
+                        font: { size: 16 }
+                    },
+                    
+                    tooltip: {
+                        filter: function(tooltipItem) {
+                            return tooltipItem.datasetIndex !== 1;
+                        }
                     }
                 }
             }
         });
     </script>
+</body>
+</html>
     
         <footer class="footer">
         <div class="footer-column">
