@@ -12,13 +12,14 @@ $processed_data = [];
 $top_students = [];   
 $class_name = "";
 $lesson_title = "";
-$lesson_desc = ""; 
+$lesson_desc = "";
 $max_score = -1;
+$is_lop6 = false; 
 
 try {
     require_once 'db_config.php';
     
-    // --- QUERY 1: LẤY DANH SÁCH LỚP ---
+    // 1. LẤY DANH SÁCH LỚP
     $user_role = $_SESSION['role'] ?? 'admin'; 
     if ($user_role === 'super') {
         $stmt_classes = $conn->prepare("SELECT id, ten_lop FROM lop_hoc ORDER BY ten_lop ASC");
@@ -35,54 +36,43 @@ try {
     }
     $all_classes = $stmt_classes->fetchAll(PDO::FETCH_ASSOC);
 
-    // --- QUERY 2: LẤY DỮ LIỆU BÁO CÁO ---
+    // 2. LẤY DỮ LIỆU
     if ($lop_id_filter) {
-        
         $is_allowed = false;
         foreach ($all_classes as $class) {
             if ($class['id'] == $lop_id_filter) {
                 $is_allowed = true;
                 $class_name = $class['ten_lop'];
+                
+                // Kiểm tra lớp 6
+                if ($class_name === '6-Toán') {
+                    $is_lop6 = true;
+                }
                 break;
             }
         }
         if (!$is_allowed) die("BẠN KHÔNG CÓ QUYỀN TRUY CẬP LỚP NÀY!");
 
-        // --- QUERY 2.1: LẤY NỘI DUNG BÀI HỌC (TITLE + DESC) ---
-        $stmt_lesson = $conn->prepare("
-            SELECT lesson_title, lesson_description 
-            FROM diem_danh 
-            WHERE lop_id = ? AND ngay_diem_danh = ? 
-            LIMIT 1
-        ");
+        // 2.1 Lấy nội dung bài học
+        $stmt_lesson = $conn->prepare("SELECT lesson_title, lesson_description FROM diem_danh WHERE lop_id = ? AND ngay_diem_danh = ? LIMIT 1");
         $stmt_lesson->execute([$lop_id_filter, $ngay_filter]);
         $lesson_row = $stmt_lesson->fetch(PDO::FETCH_ASSOC);
-        
         $lesson_title = $lesson_row['lesson_title'] ?? null;
         $lesson_desc = $lesson_row['lesson_description'] ?? null;
 
-        // --- QUERY 2.2: LẤY DANH SÁCH HỌC SINH ---
+        // 2.2 Lấy danh sách và nhận xét
         $sql_report = "
             SELECT 
-                dhs.so_bao_danh,
-                dhs.ho_ten,
+                dhs.so_bao_danh, dhs.ho_ten,
                 dd.trang_thai AS trang_thai_diem_danh,
-                dtp.diem_so AS diem_test,
-                dtp.diem_btvn
-            FROM 
-                diem_hoc_sinh dhs
+                dd.nhan_xet, 
+                dtp.diem_so AS diem_test, dtp.diem_btvn
+            FROM diem_hoc_sinh dhs
             JOIN users u ON LOWER(dhs.so_bao_danh) = LOWER(u.username)
             JOIN user_lop ul ON u.id = ul.user_id
-            LEFT JOIN diem_danh dd 
-                ON LOWER(dhs.so_bao_danh) = LOWER(dd.so_bao_danh) 
-                AND dd.ngay_diem_danh = ? 
-                AND dd.lop_id = ?
-            LEFT JOIN diem_thanh_phan dtp 
-                ON LOWER(dhs.so_bao_danh) = LOWER(dtp.so_bao_danh) 
-                AND dtp.ngay_kiem_tra = ? 
-                AND dtp.lop_id = ?
-            WHERE 
-                ul.lop_hoc_id = ?
+            LEFT JOIN diem_danh dd ON LOWER(dhs.so_bao_danh) = LOWER(dd.so_bao_danh) AND dd.ngay_diem_danh = ? AND dd.lop_id = ?
+            LEFT JOIN diem_thanh_phan dtp ON LOWER(dhs.so_bao_danh) = LOWER(dtp.so_bao_danh) AND dtp.ngay_kiem_tra = ? AND dtp.lop_id = ?
+            WHERE ul.lop_hoc_id = ?
         ";
         
         $stmt_report = $conn->prepare($sql_report);
@@ -93,7 +83,6 @@ try {
             $parts = explode(' ', trim($row['ho_ten']));
             $ten = array_pop($parts);
             $ho_dem = implode(' ', $parts);
-            
             $row['ten'] = $ten;
             $row['ho_dem'] = $ho_dem;
 
@@ -101,11 +90,17 @@ try {
             $diem_test = ($row['diem_test'] !== null) ? (float)$row['diem_test'] : 0;
             $diem_btvn = ($row['diem_btvn'] !== null) ? (float)$row['diem_btvn'] : 0;
 
-            $diem_tich_luy = ($diem_test * 2 + $diem_cc + $diem_btvn) / 4;
+            // Công thức tính điểm
+            if ($is_lop6) {
+                // Lớp 6: (CC + BTVN) / 2
+                $diem_tich_luy = ($diem_cc + $diem_btvn) / 2;
+            } else {
+                // Lớp khác: (Test*2 + CC + BTVN) / 4
+                $diem_tich_luy = ($diem_test * 2 + $diem_cc + $diem_btvn) / 4;
+            }
 
             $row['diem_cc_val'] = $diem_cc;
             $row['diem_tich_luy'] = $diem_tich_luy;
-            
             $processed_data[] = $row;
 
             if ($diem_tich_luy > $max_score) {
@@ -113,7 +108,7 @@ try {
             }
         }
 
-        // --- SẮP XẾP ---
+        // Sắp xếp A-Z
         if (!function_exists('convert_vi_to_en')) {
             function convert_vi_to_en($str) {
                 $str = preg_replace("/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/", "a", $str);
@@ -133,16 +128,11 @@ try {
                 return strtolower($str);
             }
         }
-
         usort($processed_data, function($a, $b) {
             $tenA = convert_vi_to_en($a['ten']);
             $tenB = convert_vi_to_en($b['ten']);
             $res = strcmp($tenA, $tenB);
-            if ($res === 0) {
-                $hoA = convert_vi_to_en($a['ho_dem']);
-                $hoB = convert_vi_to_en($b['ho_dem']);
-                return strcmp($hoA, $hoB);
-            }
+            if ($res === 0) return strcmp(convert_vi_to_en($a['ho_dem']), convert_vi_to_en($b['ho_dem']));
             return $res;
         });
 
@@ -155,7 +145,6 @@ try {
         }
     }
     $conn = null;
-
 } catch (PDOException $e) {
     $error = "Lỗi: " . $e->getMessage();
 }
@@ -166,7 +155,6 @@ function getDiemChuyenCan($status) {
     if ($status == 'absent') return 0;
     return 0; 
 }
-
 function getTrangThaiText($status) {
     if ($status == 'present') return '<span style="color:green; font-weight:bold;">Có mặt</span>';
     if ($status == 'late') return '<span style="color:orange; font-weight:bold;">Muộn</span>';
@@ -187,60 +175,36 @@ function getTrangThaiText($status) {
         .report-table td { text-align: center; vertical-align: middle; }
         .col-ho-dem { text-align: left !important; padding-left: 10px !important; }
         .col-ten { text-align: left !important; font-weight: bold; }
-        
-        .commendation-box {
-            margin-top: 30px;
-            padding: 20px;
-            border: 2px solid #FFD700; 
-            background-color: rgba(255, 215, 0, 0.1);
-            border-radius: 10px;
-            text-align: center;
-            color: var(--text-color);
-        }
-        .commendation-box h3 { color: #d35400; margin-top: 0; text-transform: uppercase; }
-        .commendation-box .student-name { font-size: 1.5em; font-weight: bold; color: #2ecc71; margin: 10px 0; }
-        .commendation-box i { color: #FFD700; margin-right: 10px; }
         .lesson-info {
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 20px; padding: 15px;
             background-color: rgba(0, 123, 255, 0.05);
             border-left: 5px solid var(--primary-color);
-            border-radius: 5px;
-            color: var(--text-color);
-            text-align: left;
+            border-radius: 5px; color: var(--text-color); text-align: left; 
         }
-        .lesson-info h4 { margin: 0 0 5px 0; font-size: 1.1em; color: var(--primary-color); }
-        .lesson-info p { margin: 0; font-style: italic; color: var(--text-color-light); }
     </style>
 </head>
 <body class="admin-page-blue">
-    
     <header class="header">
         <div class="auth-buttons">
-            <span style="color: #333; margin-right: 15px;">
-                Chào, <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>!
-            </span>
+            <span style="color: #333; margin-right: 15px;">Chào, <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>!</span>
             <div class="theme-switch-wrapper">
-                <label class="theme-switch" for="checkbox">
-                    <input type="checkbox" id="checkbox" />
-                    <div class="slider round"></div>
-                </label>
+                <label class="theme-switch" for="checkbox"><input type="checkbox" id="checkbox" /><div class="slider round"></div></label>
             </div>
             <a href="admin.php"><button id="login-btn">Trang Quản trị</button></a>
-            <a href="logout.php"><button id="login-btn">Đăng xuất</button></a>
         </div>
     </header>
 
     <main class="container" style="max-width: 1300px;">
         <h2>Báo cáo tổng hợp hàng ngày</h2>
-        <p>Xem trạng thái điểm danh, điểm kiểm tra và BTVN của lớp trong một ngày cụ thể.</p>
-        
         <?php if (isset($error)) echo "<p class='error-msg'>$error</p>"; ?>
+        <?php if (isset($_GET['save']) && $_GET['save'] == 'success'): ?>
+            <div class="success-msg">Đã lưu nhận xét thành công!</div>
+        <?php endif; ?>
 
         <form class="filter-form" action="daily_report.php" method="GET">
             <div>
-                <label for="lop_id">Chọn lớp:</label>
-                <select name="lop_id" id="lop_id" required>
+                <label>Chọn lớp:</label>
+                <select name="lop_id" required>
                     <option value="">-- Chọn một lớp --</option>
                     <?php foreach ($all_classes as $class): ?>
                         <option value="<?php echo $class['id']; ?>" <?php if ($class['id'] == $lop_id_filter) echo 'selected'; ?>>
@@ -250,104 +214,111 @@ function getTrangThaiText($status) {
                 </select>
             </div>
             <div>
-                <label for="ngay">Chọn ngày:</label>
+                <label>Ngày:</label>
                 <input type="date" name="ngay" id="ngay" value="<?php echo htmlspecialchars($ngay_filter); ?>" required>
             </div>
             <button type="submit">Xem báo cáo</button>
         </form>
 
         <?php if ($lop_id_filter): ?>
-            <h3 style="margin-top: 30px;">
-                Báo cáo lớp "<?php echo htmlspecialchars($class_name); ?>" - Ngày <?php echo date('d/m/Y', strtotime($ngay_filter)); ?>
-            </h3>
+            <h3 style="margin-top: 30px;">Báo cáo lớp "<?php echo htmlspecialchars($class_name); ?>" - Ngày <?php echo date('d/m/Y', strtotime($ngay_filter)); ?></h3>
 
             <?php if (!empty($lesson_title)): ?>
                 <div class="lesson-info">
-                    <p style="margin: 0;">
-                        <strong style="color: var(--primary-color); font-size: 1.1em; margin-right: 5px;">
-                            <i class="fas fa-book-open"></i> Nội dung bài học:
-                        </strong>
-                        
-                        <?php echo htmlspecialchars($lesson_title); ?>
-                    </p>
-                    
-                    <?php if (!empty($lesson_desc)): ?>
-                        <p style="margin-top: 5px; font-style: italic; color: var(--text-color-light); padding-left: 20px;">
-                            - <?php echo nl2br(htmlspecialchars($lesson_desc)); ?>
-                        </p>
-                    <?php endif; ?>
+                    <p style="margin: 0;"><strong style="color: var(--primary-color); font-size: 1.1em; margin-right: 5px;"><i class="fas fa-book-open"></i> Nội dung bài học:</strong><?php echo htmlspecialchars($lesson_title); ?></p>
+                    <?php if (!empty($lesson_desc)): ?><p style="margin-top: 5px; font-style: italic; color: var(--text-color-light); padding-left: 20px;">- <?php echo nl2br(htmlspecialchars($lesson_desc)); ?></p><?php endif; ?>
                 </div>
             <?php else: ?>
-                <div class="lesson-info" style="border-left-color: #ccc;">
-                    <p>Chưa cập nhật nội dung bài học cho ngày này.</p>
-                </div>
+                <div class="lesson-info" style="border-left-color: #ccc;"><p>Chưa cập nhật nội dung bài học.</p></div>
             <?php endif; ?>
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th style="width: 50px;">STT</th>
-                        <th style="width: 90px;">SBD</th>
-                        <th style="width: 150px;">Họ đệm</th>
-                        <th style="width: 80px;">Tên</th>
-                        <th style="width: 100px;">Trạng thái</th>
-                        <th style="width: 70px;">Điểm Chuyên Cần</th>
-                        <th style="width: 70px;">Điểm Test</th>
-                        <th style="width: 70px;">Điểm BTVN</th>
-                        <th style="width: 90px; background-color: rgba(0, 123, 255, 0.1);">Điểm Tích Lũy</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($processed_data)): ?>
-                        <tr><td colspan="9">Không tìm thấy dữ liệu (hoặc chưa điểm danh) cho ngày này.</td></tr>
+
+            <form action="save_daily_comments.php" method="POST">
+                <input type="hidden" name="lop_id" value="<?php echo $lop_id_filter; ?>">
+                <input type="hidden" name="ngay" value="<?php echo $ngay_filter; ?>">
+
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">STT</th>
+                            <th style="width: 90px;">SBD</th>
+                            <th style="width: 140px;">Họ đệm</th>
+                            <th style="width: 70px;">Tên</th>
+                            <th style="width: 80px;">Trạng thái</th>
+                            <th style="width: 50px;">Điểm chuyên cần</th>
+                            
+                            <?php if (!$is_lop6): ?>
+                                <th style="width: 50px;">Điểm Test</th>
+                            <?php endif; ?>
+
+                            <th style="width: 50px;">Điểm BTVN</th>
+                            <th style="width: 80px; background-color: rgba(0, 123, 255, 0.1);">Tích Lũy</th>
+                            
+                            <?php if ($is_lop6): ?>
+                                <th>Nhận xét giáo viên</th>
+                            <?php endif; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($processed_data)): ?>
+                            <tr><td colspan="<?php echo $is_lop6 ? '9' : '9'; ?>">Không tìm thấy dữ liệu.</td></tr>
+                        <?php else: ?>
+                            <?php $stt = 1; foreach ($processed_data as $row): ?>
+                                <tr>
+                                    <td><?php echo $stt++; ?></td>
+                                    <td><?php echo htmlspecialchars($row['so_bao_danh']); ?></td>
+                                    <td class="col-ho-dem"><?php echo htmlspecialchars($row['ho_dem']); ?></td>
+                                    <td class="col-ten"><?php echo htmlspecialchars($row['ten']); ?></td>
+                                    <td><?php echo getTrangThaiText($row['trang_thai_diem_danh']); ?></td>
+                                    <td style="font-weight:bold; color:var(--primary-color);"><?php echo ($row['trang_thai_diem_danh']) ? $row['diem_cc_val'] : '-'; ?></td>
+                                    
+                                    <?php if (!$is_lop6): ?>
+                                        <td><?php echo ($row['diem_test'] !== null) ? $row['diem_test'] : '-'; ?></td>
+                                    <?php endif; ?>
+                                    
+                                    <td><?php echo ($row['diem_btvn'] !== null) ? $row['diem_btvn'] : '-'; ?></td>
+                                    <td style="font-weight:bold; color:#e74c3c; background-color: rgba(0, 123, 255, 0.05);"><?php echo number_format($row['diem_tich_luy'], 2); ?></td>
+                                    
+                                    <?php if ($is_lop6): ?>
+                                        <td>
+                                            <textarea class="comment-box" 
+                                                      name="nhanxet[<?php echo htmlspecialchars($row['so_bao_danh']); ?>]" 
+                                                      placeholder="Nhận xét hôm nay..."><?php echo htmlspecialchars($row['nhan_xet'] ?? ''); ?></textarea>
+                                        </td>
+                                    <?php endif; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+                
+                <p style="font-style: italic; color: var(--text-color-light); margin-top: 10px;">
+                    * Điểm CC: Có mặt (10), Muộn (7), Vắng (0).<br>
+                    <?php if ($is_lop6): ?>
+                        * Điểm Tích Lũy = (Điểm CC + Điểm BTVN) / 2
                     <?php else: ?>
-                        <?php $stt = 1; foreach ($processed_data as $row): ?>
-                            <tr>
-                                <td><?php echo $stt++; ?></td>
-                                <td><?php echo htmlspecialchars($row['so_bao_danh']); ?></td>
-                                <td class="col-ho-dem"><?php echo htmlspecialchars($row['ho_dem']); ?></td>
-                                <td class="col-ten"><?php echo htmlspecialchars($row['ten']); ?></td>
-                                
-                                <td><?php echo getTrangThaiText($row['trang_thai_diem_danh']); ?></td>
-                                
-                                <td style="font-weight: bold; color: var(--primary-color);">
-                                    <?php echo ($row['trang_thai_diem_danh']) ? $row['diem_cc_val'] : '-'; ?>
-                                </td>
-
-                                <td><?php echo ($row['diem_test'] !== null) ? $row['diem_test'] : '-'; ?></td>
-                                <td><?php echo ($row['diem_btvn'] !== null) ? $row['diem_btvn'] : '-'; ?></td>
-
-                                <td style="font-weight: bold; color: #e74c3c; background-color: rgba(0, 123, 255, 0.05);">
-                                    <?php echo number_format($row['diem_tich_luy'], 2); ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
+                        * Điểm Tích Lũy = (Điểm Test * 2 + Điểm CC + Điểm BTVN) / 4.
                     <?php endif; ?>
-                </tbody>
-            </table>
-            
-            <p style="font-style: italic; color: var(--text-color-light); margin-top: 10px;">
-                * Điểm CC: Có mặt (10), Muộn (7), Vắng (0).<br>
-                * Điểm Tích Lũy = (Điểm Test * 2 + Điểm CC + Điểm BTVN) / 4.
-            </p>
+                </p>
 
-            <?php if (!empty($top_students)): ?>
-                <div class="commendation-box">
-                    <h3> Bảng Vàng Nhất Đạo Edu </h3>
-                    <p>Học sinh có điểm tích luỹ cao nhất: (<?php echo number_format($max_score, 2); ?> điểm):</p>
-                    <div class="student-name">
-                        <?php echo implode(', ', $top_students); ?>
+                <?php if (!empty($top_students)): ?>
+                    <div class="commendation-box">
+                        <h3>Bảng Vinh Danh Nhất Đạo Edu </h3>
+                        <p>Chúc mừng học sinh có điểm tích lũy cao nhất hôm nay (<?php echo number_format($max_score, 2); ?> điểm):</p>
+                        <div class="student-name"><?php echo implode(', ', $top_students); ?></div>
                     </div>
-                </div>
-            <?php endif; ?>
-
+                <?php endif; ?>
+                
+                <?php if (!empty($processed_data) && $is_lop6): ?>
+                    <button type="submit" class="submit-btn">Lưu tất cả nhận xét</button>
+                <?php endif; ?>
+            </form>
+            
+            <img src="nhatdao_watermark.png" class="watermark-print-logo" alt="Watermark">
             <div style="margin-top: 30px; text-align: right;">
-                <button onclick="window.print()" class="btn-print">
-                    <i class="fas fa-file-pdf"></i> Xuất file PDF
-                </button>
+                <button onclick="window.print()" class="btn-print"><i class="fas fa-file-pdf"></i> Xuất file PDF</button>
             </div>
         <?php endif; ?>
     </main>
-    <img src="nhatdao_watermark.png" class="watermark-print-logo" alt="Watermark">
     <script src="admin_main.js"></script>
 </body>
 </html>
