@@ -194,10 +194,10 @@ try {
                         <tr>
                             <th style="width: 80px;">SBD</th>
                             <th style="width: 180px;">Họ và tên</th>
-                            <th style="width: 80px;">TB Test</th>
-                            <th style="width: 80px;">TB CC</th>
-                            <th style="width: 80px;">TB BTVN</th>
-                            <th style="width: 80px;">TB Tích lũy</th>
+                            <th style="width: 80px;">Trung bình Test</th>
+                            <th style="width: 80px;">Trung bình Chuyên Cần</th>
+                            <th style="width: 80px;">Trung bình BTVN</th>
+                            <th style="width: 80px;">Trung bình Tích lũy</th>
                             <th>Nhận xét tháng</th>
                         </tr>
                     </thead>

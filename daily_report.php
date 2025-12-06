@@ -140,7 +140,6 @@ try {
             return $res;
         });
 
-        // Tìm thủ khoa (Chỉ tìm nếu KHÔNG PHẢI LỚP 8 - Vì lớp 8 ko có điểm tích lũy)
         if (!$is_lop8 && $max_score > 0) {
             foreach ($processed_data as $student) {
                 if (abs($student['diem_tich_luy'] - $max_score) < 0.01) {
@@ -252,21 +251,21 @@ function getTrangThaiText($status) {
                             <th style="width: 80px;">Trạng thái</th>
                             
                             <?php if (!$is_lop8): ?>
-                                <th style="width: 50px;">CC</th>
+                                <th style="width: 50px;">Chuyên Cần</th>
                             <?php endif; ?>
                             
                             <?php if (!$is_lop6): ?>
-                                <th style="width: 50px;">Test</th>
+                                <th style="width: 50px;">Điểm Test</th>
                             <?php endif; ?>
 
-                            <th style="width: 50px;">BTVN</th>
+                            <th style="width: 50px;">Điểm BTVN</th>
 
                             <?php if (!$is_lop8): ?>
-                                <th style="width: 80px; background-color: rgba(0, 123, 255, 0.1);">Tích Lũy</th>
+                                <th style="width: 80px; background-color: rgba(0, 123, 255, 0.1);">Điểm tích Lũy</th>
                             <?php endif; ?>
                             
                             <?php if ($is_lop6 || $is_lop8): ?>
-                                <th>Nhận xét giáo viên</th>
+                                <th>Nhận xét của giáo viên</th>
                             <?php endif; ?>
                         </tr>
                     </thead>
@@ -309,7 +308,7 @@ function getTrangThaiText($status) {
                     </tbody>
                 </table>
                 
-                <p style="font-style: italic; color: var(--text-color-light); margin-top: 10px;">
+                <p class="no-print" style="font-style: italic; color: var(--text-color-light); margin-top: 10px;">
                     * Lưu ý: Xuất file PDF ở chế độ Landscape.<br>
                     <?php if (!$is_lop8): ?>
                         * Điểm CC: Có mặt (10), Muộn (7), Vắng (0).
@@ -317,12 +316,26 @@ function getTrangThaiText($status) {
                 </p>
 
                 <?php if (!empty($top_students) && !$is_lop8): ?>
-                    <div class="commendation-box">
-                        <h3>Bảng Vinh Danh Nhất Đạo Edu</h3>
-                        <p>Chúc mừng học sinh có điểm cao nhất (<?php echo number_format($max_score, 2); ?> điểm):</p>
-                        <div class="student-name"><?php echo implode(', ', $top_students); ?></div>
+                <div class="commendation-box">
+                    <div class="commendation-icon">
+                        <i class="fas fa-trophy"></i>
                     </div>
-                <?php endif; ?>
+                    <div class="commendation-content">
+                        <h3>BẢNG VÀNG THÀNH TÍCH HÔM NAY</h3>
+                        <p class="subtitle">Congratulations, my Shella</p>
+                        
+                        <div class="student-name">
+                            <?php echo implode('<br>', $top_students); ?>
+                        </div>
+                        
+                        <div class="score-badge">
+                            Điểm tích lũy: <strong><?php echo number_format($max_score, 2); ?></strong>
+                        </div>
+                        
+                        <p class="encouragement">"Thanh xuân như một tách trà, ăn xong miếng bánh hết bà thanh xuân"</p>
+                    </div>
+                </div>
+            <?php endif; ?>
                 
                 <?php if (!empty($processed_data) && ($is_lop6 || $is_lop8)): ?>
                     <button type="submit" class="submit-btn">Lưu tất cả nhận xét</button>

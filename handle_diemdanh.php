@@ -8,6 +8,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $lop_id = $_POST['lop_id'];
     $ngay_diem_danh = $_POST['ngay_diem_danh'];
     $lesson_title = $_POST['lesson_title'] ?? '';
+    $lesson_description = $_POST['lesson_description'] ?? '';
 } elseif (isset($_GET['lop_id']) && isset($_GET['ngay'])) { 
     $lop_id = $_GET['lop_id'];
     $ngay_diem_danh = $_GET['ngay'];
@@ -23,7 +24,8 @@ $monthly_points = [];
 $saved_scores = []; 
 
 $current_title = $lesson_title;
-$current_desc = "";
+$current_desc = $lesson_description ?? "";
+$is_lop6 = false; // Biến kiểm tra lớp 6
 
 require_once 'db_config.php';
 
@@ -34,6 +36,12 @@ try {
     $class_info = $stmt_class->fetch(PDO::FETCH_ASSOC);
 
     if (!$class_info) { die("Không tìm thấy lớp này."); }
+
+    // --- KIỂM TRA LỚP 6 ---
+    if (strpos($class_info['ten_lop'], '6-') === 0) {
+        $is_lop6 = true;
+    }
+    // ----------------------
 
     // Query 2: Lấy danh sách học sinh
     $stmt_students = $conn->prepare("
@@ -162,6 +170,7 @@ try {
         .radio-group input[type="radio"][value="late"]:checked + label { color: #fd7e14; font-weight: bold; }
         [data-theme="dark"] .radio-group input[type="radio"][value="late"]:checked + label { color: #ffb74d; }
     </style>
+
 </head>
 <body class="admin-page-blue">
     
@@ -204,14 +213,13 @@ try {
             <input type="hidden" name="ngay_diem_danh" value="<?php echo htmlspecialchars($ngay_diem_danh); ?>">
 
             <div style="margin-bottom: 20px; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.3);">
-                
                 <label style="font-weight: bold; font-size: 1.1em; margin-bottom: 8px; display: block;">Tiêu đề bài học:</label>
                 <input type="text" name="lesson_title" value="<?php echo htmlspecialchars($current_title); ?>" 
-                       class="form-input" required placeholder="Nhập tên bài học...">
+                       class="form-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px;" required placeholder="Nhập tên bài học...">
                 
                 <label style="font-weight: bold; font-size: 1.1em; margin-bottom: 8px; display: block;">Mô tả bài học:</label>
                 <textarea name="lesson_description" rows="3" 
-                          class="form-input" placeholder="Nhập nội dung chi tiết..."><?php echo htmlspecialchars($current_desc); ?></textarea>
+                          class="form-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; resize: vertical;" placeholder="Nhập nội dung chi tiết..."><?php echo htmlspecialchars($current_desc); ?></textarea>
             </div>
 
             <table>
@@ -220,15 +228,19 @@ try {
                         <th style="width: 40px;">STT</th>
                         <th style="width: 80px;">SBD</th>
                         <th style="text-align: left;">Họ và tên</th>
-                        <th style="width: 80px;">CC (Tháng)</th>
+                        <th style="width: 80px;">Chuyên Cần (Tổng tháng)</th>
                         <th>Trạng thái đi học</th>
-                        <th style="width: 100px;">Điểm Test</th>
+                        
+                        <?php if (!$is_lop6): ?>
+                            <th style="width: 100px;">Điểm Test</th>
+                        <?php endif; ?>
+
                         <th style="width: 100px;">Điểm BTVN</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($students_list)): ?>
-                        <tr><td colspan="7">Lớp này chưa có học sinh.</td></tr>
+                        <tr><td colspan="<?php echo $is_lop6 ? '6' : '7'; ?>">Lớp này chưa có học sinh.</td></tr>
                     <?php else: ?>
                         <?php foreach ($students_list as $index => $student): ?>
                             <?php
@@ -259,11 +271,13 @@ try {
                                     </span>
                                 </td>
                                 
-                                <td>
-                                    <input type="number" step="0.01" min="0" max="10" class="score-input-mini" 
-                                           name="scores_test[<?php echo $student['so_bao_danh']; ?>]" 
-                                           value="<?php echo $score_test; ?>">
-                                </td>
+                                <?php if (!$is_lop6): ?>
+                                    <td>
+                                        <input type="number" step="0.01" min="0" max="10" class="score-input-mini" 
+                                               name="scores_test[<?php echo $student['so_bao_danh']; ?>]" 
+                                               value="<?php echo $score_test; ?>">
+                                    </td>
+                                <?php endif; ?>
 
                                 <td>
                                     <input type="number" step="0.01" min="0" max="10" class="score-input-mini" 
@@ -277,7 +291,7 @@ try {
             </table>
 
             <?php if (!empty($students_list)): ?>
-                <button type="submit" class="submit-btn">Lưu tất cả</button>
+                <button type="submit" class="submit-btn">Lưu điểm danh</button>
             <?php endif; ?>
         </form>
     </main>
