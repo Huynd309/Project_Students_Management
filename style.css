@@ -1661,30 +1661,27 @@ td a.btn-delete:active {
         color: #000 !important;
         visibility: visible; 
     }
+}
 
-    .container::after {
-        content: "";
+.watermark-print-logo {
+    display: none;
+}
+
+@media print {
+    .watermark-print-logo {
+        display: block !important;
+        
+        visibility: visible !important; 
+        
         position: fixed; 
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         
-        width: 500px;  
-        height: 500px;
-        
-        background-image: url('nhatdao_watermark.png'); 
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: contain;
-        
+        width: 500px; 
         opacity: 0.15; 
         
         z-index: 9999; 
         pointer-events: none;
-        
-        visibility: visible !important;
-        
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
     }
 }

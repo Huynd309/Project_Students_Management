@@ -249,7 +249,7 @@ try {
             </div>
         <?php endif; ?>
     </main>
-
+    <img src="nhatdao_watermark.png" class="watermark-print-logo" alt="Watermark">
     <script src="admin_main.js"></script>
 </body>
 </html>
