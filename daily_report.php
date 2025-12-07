@@ -322,7 +322,7 @@ function getTrangThaiText($status) {
                     </div>
                     <div class="commendation-content">
                         <h3>BẢNG VÀNG THÀNH TÍCH HÔM NAY</h3>
-                        <p class="subtitle">Congratulations, my Shella</p>
+                        <p class="subtitle">Congratulations</p>
                         
                         <div class="student-name">
                             <?php echo implode('<br>', $top_students); ?>
@@ -332,7 +332,7 @@ function getTrangThaiText($status) {
                             Điểm tích lũy: <strong><?php echo number_format($max_score, 2); ?></strong>
                         </div>
                         
-                        <p class="encouragement">"Thanh xuân như một tách trà, ăn xong miếng bánh hết bà thanh xuân"</p>
+                        <p class="encouragement">"Nhất Đạo Education- làm mọi hành động vì học sinh !"</p>
                     </div>
                 </div>
             <?php endif; ?>
