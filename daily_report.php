@@ -14,7 +14,7 @@ $class_name = "";
 $lesson_title = "";
 $lesson_desc = "";
 $max_score = -1;
-$is_lop6 = false;
+$is_lop2 = false;
 $is_lop8 = false; // Thêm biến kiểm tra Lớp 8
 
 try {
@@ -42,7 +42,7 @@ try {
                 $class_name = $class['ten_lop'];
                 
                 // Kiểm tra loại lớp
-                if (strpos($class_name, '6-') === 0) $is_lop6 = true; // Lớp 6
+                if (strpos($class_name, '2-') === 0) $is_lop2 = true; // Lớp 2
                 if (strpos($class_name, '8-') === 0) $is_lop8 = true; // Lớp 8 (Mới)
                 
                 break;
@@ -89,7 +89,7 @@ try {
 
             // Công thức tính điểm
             $diem_tich_luy = 0;
-            if ($is_lop6) {
+            if ($is_lop2) {
                 $diem_tich_luy = ($diem_cc + $diem_btvn) / 2;
             } elseif (!$is_lop8) { // Lớp 8 không tính tích lũy
                 $diem_tich_luy = ($diem_test * 2 + $diem_cc + $diem_btvn) / 4;
@@ -254,7 +254,7 @@ function getTrangThaiText($status) {
                                 <th style="width: 50px;">Chuyên Cần</th>
                             <?php endif; ?>
                             
-                            <?php if (!$is_lop6): ?>
+                            <?php if (!$is_lop2): ?>
                                 <th style="width: 50px;">Điểm Test</th>
                             <?php endif; ?>
 
@@ -264,7 +264,7 @@ function getTrangThaiText($status) {
                                 <th style="width: 80px; background-color: rgba(0, 123, 255, 0.1);">Điểm tích Lũy</th>
                             <?php endif; ?>
                             
-                            <?php if ($is_lop6 || $is_lop8): ?>
+                            <?php if ($is_lop2 || $is_lop8): ?>
                                 <th>Nhận xét của giáo viên</th>
                             <?php endif; ?>
                         </tr>
@@ -285,7 +285,7 @@ function getTrangThaiText($status) {
                                         <td style="font-weight:bold; color:var(--primary-color);"><?php echo ($row['trang_thai_diem_danh']) ? $row['diem_cc_val'] : '-'; ?></td>
                                     <?php endif; ?>
                                     
-                                    <?php if (!$is_lop6): ?>
+                                    <?php if (!$is_lop2): ?>
                                         <td><?php echo ($row['diem_test'] !== null) ? $row['diem_test'] : '-'; ?></td>
                                     <?php endif; ?>
                                     
@@ -295,7 +295,7 @@ function getTrangThaiText($status) {
                                         <td style="font-weight:bold; color:#e74c3c; background-color: rgba(0, 123, 255, 0.05);"><?php echo number_format($row['diem_tich_luy'], 2); ?></td>
                                     <?php endif; ?>
                                     
-                                    <?php if ($is_lop6 || $is_lop8): ?>
+                                    <?php if ($is_lop2 || $is_lop8): ?>
                                         <td>
                                             <textarea class="comment-box" 
                                                       name="nhanxet[<?php echo htmlspecialchars($row['so_bao_danh']); ?>]" 
@@ -337,7 +337,7 @@ function getTrangThaiText($status) {
                 </div>
             <?php endif; ?>
                 
-                <?php if (!empty($processed_data) && ($is_lop6 || $is_lop8)): ?>
+                <?php if (!empty($processed_data) && ($is_lop2 || $is_lop8)): ?>
                     <button type="submit" class="submit-btn">Lưu tất cả nhận xét</button>
                 <?php endif; ?>
             </form>
