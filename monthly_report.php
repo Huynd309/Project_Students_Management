@@ -227,7 +227,7 @@ try {
 
         <?php if ($lop_id_filter): ?>
             <h3 style="margin-top: 30px;">
-                Báo cáo tháng <?php echo $thang_filter . '/' . $nam_filter; ?> - Lớp <?php echo htmlspecialchars($class_name); ?>
+                Báo cáo tổng thể tháng <?php echo $thang_filter . '/' . $nam_filter; ?> - Lớp <?php echo htmlspecialchars($class_name); ?>
             </h3>
 
             <form action="save_monthly_comments.php" method="POST">
@@ -250,7 +250,7 @@ try {
                             <th style="width: 80px;">TB Chuyên Cần</th>
                             <th style="width: 80px;">TB BTVN</th>
                             <th style="width: 80px;">TB Tích lũy</th>
-                            <th>Nhận xét tháng</th>
+                            <th class = "no-print" style="width: 80px;">Hành động</th> </tr>
                         </tr>
                     </thead>
                     <tbody>
@@ -274,18 +274,18 @@ try {
                                     
                                     <td class="col-total"><?php echo number_format($row['tb_tich_luy'], 2); ?></td>
                                     
-                                    <td>
-                                        <textarea class="comment-box" 
-                                                  name="nhanxet[<?php echo htmlspecialchars($row['so_bao_danh']); ?>]" 
-                                                  placeholder="Nhận xét..."><?php echo htmlspecialchars($row['nhan_xet'] ?? ''); ?></textarea>
-                                    </td>
+                                    <td class="no-print">
+                                        <a href="student_monthly_report.php?sbd=<?php echo $row['so_bao_danh']; ?>&month=<?php echo $thang_filter; ?>&year=<?php echo $nam_filter; ?>&lop_id=<?php echo $lop_id_filter; ?>" 
+                                            class="btn-edit" style="font-size: 0.8em; white-space: nowrap;">
+                                        <i class="fas fa-chart-line"></i> Xem chi tiết
+                                    </a></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
                 
-                <p style="font-style: italic; color: var(--text-color-light); margin-top: 10px;">
+                <p class ="no-print" style="font-style: italic; color: var(--text-color-light); margin-top: 10px;">
                 * Lưu ý: Khi xuất file PDF thì để chế độ Landscape.<br>
                 <?php if ($is_lop2): ?>
                     * Điểm Tích Lũy = (TB CC + TB BTVN) / 2
@@ -294,9 +294,6 @@ try {
                 <?php endif; ?>
                 </p>
 
-                <?php if (!empty($processed_data)): ?>
-                    <button type="submit" class="submit-btn">Lưu nhận xét</button>
-                <?php endif; ?>
             </form>
             
             <img src="nhatdao_watermark.png" class="watermark-print-logo" alt="Watermark">

@@ -4,28 +4,23 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['is_admin']) || $_SESSION['
     die("TRUY CẬP BỊ TỪ CHỐI!");
 }
 
-if ($_SERVER["REQUEST_METHOD"] != "POST") {
-    die("Phương thức không hợp lệ.");
-}
+if ($_SERVER["REQUEST_METHOD"] != "POST") { die("Phương thức không hợp lệ."); }
 
 $lop_id = $_POST['lop_id'];
 $thang = $_POST['thang'];
 $nam = $_POST['nam'];
 $comments = $_POST['nhanxet'] ?? [];
+$sbd_single = $_POST['sbd_single'] ?? null; 
 
-$redirect_url = "monthly_report.php?lop_id=$lop_id&thang=$thang&nam=$nam";
+require_once 'db_config.php';
 
 try {
-    require_once 'db_config.php';
-
     $conn->beginTransaction();
 
-    $sql = "
-        INSERT INTO nhan_xet_thang (so_bao_danh, lop_id, thang, nam, nhan_xet)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT (so_bao_danh, lop_id, thang, nam)
-        DO UPDATE SET nhan_xet = EXCLUDED.nhan_xet
-    ";
+    $sql = "INSERT INTO nhan_xet_thang (so_bao_danh, lop_id, thang, nam, nhan_xet)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (so_bao_danh, lop_id, thang, nam)
+            DO UPDATE SET nhan_xet = EXCLUDED.nhan_xet";
     $stmt = $conn->prepare($sql);
 
     foreach ($comments as $sbd => $content) {
@@ -34,7 +29,12 @@ try {
     }
 
     $conn->commit();
-    header("Location: $redirect_url&save=success");
+
+    if ($sbd_single) {
+        header("Location: student_monthly_report.php?sbd=$sbd_single&month=$thang&year=$nam&lop_id=$lop_id&save=success");
+    } else {
+        header("Location: monthly_report.php?lop_id=$lop_id&thang=$thang&nam=$nam&save=success");
+    }
     exit;
 
 } catch (PDOException $e) {
