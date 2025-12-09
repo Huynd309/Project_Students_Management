@@ -169,6 +169,35 @@ try {
         .radio-group { display: flex; justify-content: center; gap: 15px; }
         .radio-group input[type="radio"][value="late"]:checked + label { color: #fd7e14; font-weight: bold; }
         [data-theme="dark"] .radio-group input[type="radio"][value="late"]:checked + label { color: #ffb74d; }
+
+        .btn-delete-session {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 14px 20px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-delete-session:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(192, 57, 43, 0.4);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px; 
+            margin-top: 20px;
+        }
+        .action-buttons button, .action-buttons a {
+            flex: 1; 
+        }
     </style>
 
 </head>
@@ -291,7 +320,17 @@ try {
             </table>
 
             <?php if (!empty($students_list)): ?>
-                <button type="submit" class="submit-btn">Lưu điểm danh</button>
+                <div class="action-buttons">
+                    <button type="submit" class="submit-btn" style="margin-top: 0;">Lưu tất cả</button>
+
+            <?php if (!empty($current_title) || !empty($saved_statuses)): ?>
+                        <a href="handle_delete_diemdanh.php?lop_id=<?php echo $lop_id; ?>&ngay=<?php echo $ngay_diem_danh; ?>" 
+                           class="btn-delete-session"
+                           onclick="return confirm('CẢNH BÁO: Hành động này sẽ xóa toàn bộ điểm danh và điểm số của ngày <?php echo $ngay_diem_danh; ?>. Bạn có chắc chắn không?');">
+                           Xóa điểm danh
+                        </a>
+            <?php endif; ?>
+                </div>
             <?php endif; ?>
         </form>
     </main>

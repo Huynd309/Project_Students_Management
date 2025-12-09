@@ -295,13 +295,20 @@ try {
                 </p>
 
             </form>
-            
-            <img src="nhatdao_watermark.png" class="watermark-print-logo" alt="Watermark">
-            <div style="margin-top: 20px; text-align: right; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <div style="margin-top: 30px; text-align: right; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                
+                <a href="bulk_student_report.php?lop_id=<?php echo $lop_id_filter; ?>&thang=<?php echo $thang_filter; ?>&nam=<?php echo $nam_filter; ?>" 
+                   target="_blank" 
+                   class="btn-print" 
+                   style="background: linear-gradient(145deg, #007bff, #0056b3); text-decoration: none; margin-right: 10px;">
+                    <i class="fas fa-layer-group"></i> Xuất Tập Báo Cáo Cả Lớp
+                </a>
+
                 <button onclick="window.print()" class="btn-print">
-                    <i class="fas fa-file-pdf"></i> Xuất file PDF
+                    <i class="fas fa-file-pdf"></i> Xuất Bảng Tổng Hợp
                 </button>
             </div>
+            <img src="nhatdao_watermark.png" class="watermark-print-logo" alt="Watermark">
         <?php endif; ?>
     </main>
 

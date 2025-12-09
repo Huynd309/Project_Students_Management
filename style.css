@@ -1676,14 +1676,21 @@ td a.btn-delete:active {
 [data-theme="dark"] .score-badge {
     background-color: #333;
 }
+
+.watermark-print-logo {
+    display: none;
+}
+
 @media print {
     
     body * {
         visibility: hidden;
     }
 
-    .container, .container * {
-        visibility: visible;
+    .container, .container *,
+    .bulk-container, .bulk-container *,
+    .watermark-print-logo {
+        visibility: visible !important;
     }
 
     .container {
@@ -1697,17 +1704,34 @@ td a.btn-delete:active {
         border: none !important;
         box-shadow: none !important;
     }
+
+    .bulk-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: white !important;
+    }
     
-    .filter-form,           
-    .btn-print,             
-    .submit-btn,            
-    button,                 
-    .header,                
+    .watermark-print-logo {
+        display: block !important;
+        position: fixed; 
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 500px; 
+        opacity: 0.15; 
+        z-index: 9999; 
+        pointer-events: none;
+    }
+
+    .filter-form, .btn-print, .submit-btn, button, .header, 
     .container > h2:first-child, 
     .container > p:first-of-type, 
-    .container > h4,       
-    .container > p[style*="italic"],
-    .no-print
+    .container > h4, .container > p[style*="italic"],
+    .no-print, .no-print-bulk 
     {
         display: none !important;
     }
@@ -1749,6 +1773,7 @@ td a.btn-delete:active {
         color: #000 !important;
         visibility: visible; 
     }
+
     textarea.comment-box {
         border: none !important;
         background: transparent !important;
@@ -1757,12 +1782,12 @@ td a.btn-delete:active {
         padding: 5px 0 !important; 
         height: auto;
         overflow: visible;
-        
         color: #000000 !important;   
         font-weight: 700 !important; 
         font-size: 12pt !important;  
         font-family: "Times New Roman", Times, serif; 
     }
+
     .commendation-box {
         border: 3px double #000 !important;
         background-color: #fff !important;
@@ -1800,27 +1825,18 @@ td a.btn-delete:active {
         color: #000 !important;
         font-style: italic;
     }
-}
-
-.watermark-print-logo {
-    display: none;
-}
-
-@media print {
-    .watermark-print-logo {
-        display: block !important;
-        
-        visibility: visible !important; 
-        
-        position: fixed; 
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        
-        width: 500px; 
-        opacity: 0.15; 
-        
-        z-index: 9999; 
-        pointer-events: none;
+    
+    .single-report-page {
+        page-break-after: always !important;
+        break-after: page !important;
+        height: auto !important;
+        min-height: 95vh !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .single-report-page:last-child {
+        page-break-after: auto !important;
     }
 }
