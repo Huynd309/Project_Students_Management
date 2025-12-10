@@ -172,7 +172,7 @@ try {
             </div>
         </div>
 
-        <h3><i class="fas fa-chart-line"></i> Biểu đồ điểm kiểm tra</h3>
+        <h3><i class="fas fa-chart-line"></i> Biểu đồ tổng kết điểm học sinh</h3>
         <div class="chart-container">
             <canvas id="scoreChart" height="100"></canvas>
         </div>
@@ -274,7 +274,7 @@ try {
                 options: {
                     responsive: true,
                     interaction: { mode: 'index', intersect: false },
-                    scales: { y: { min: 0, max: 10, title: { display: true, text: 'Thang điểm 10' } } },
+                    scales: { y: { min: 0, max: 12,ticks: { stepSize: 1, callback: function(value) { if (value <= 10) return value; } }, title: { display: true, text: 'Thang điểm 12' } } },
                     plugins: { legend: { position: 'top' } },
                     animation: false
                 }

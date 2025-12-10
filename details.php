@@ -270,13 +270,7 @@ $conn = null;
                     intersect: true,
                 },
                 
-                scales: {
-                    y: {
-                        min: 0,
-                        max: 10,
-                        title: { display: true, text: 'Điểm số' }
-                    }
-                },
+                scales: { y: { min: 0, max: 12, ticks: { stepSize: 1, callback: function(v){return v<=10?v:null} } } },
                 
                 plugins: {
                     title: {

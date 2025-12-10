@@ -21,7 +21,7 @@ try {
     $stmt_lop->execute([$lop_id]);
     $class_name = $stmt_lop->fetchColumn();
 
-    // 2. Lấy danh sách tất cả học sinh
+    // 2. Lấy danh sách học sinh
     $stmt_list = $conn->prepare("
         SELECT dhs.so_bao_danh, dhs.ho_ten, dhs.truong 
         FROM diem_hoc_sinh dhs
@@ -33,11 +33,11 @@ try {
     $stmt_list->execute([$lop_id]);
     $student_list = $stmt_list->fetchAll(PDO::FETCH_ASSOC);
 
-    // 3. Vòng lặp lấy dữ liệu từng học sinh
+    // 3. Vòng lặp lấy dữ liệu
     foreach ($student_list as $std) {
         $sbd = $std['so_bao_danh'];
         
-        // a. Điểm số & TB Lớp
+        // Điểm số
         $stmt_scores = $conn->prepare("
             SELECT t1.ngay_kiem_tra, t1.ten_cot_diem, t1.diem_so, t1.diem_btvn,
             (SELECT AVG(t2.diem_so) FROM diem_thanh_phan t2 WHERE t2.lop_id = t1.lop_id AND t2.ngay_kiem_tra = t1.ngay_kiem_tra AND t2.ten_cot_diem = t1.ten_cot_diem) as diem_tb_lop
@@ -49,7 +49,7 @@ try {
         $stmt_scores->execute([$sbd, $lop_id, $month, $year]);
         $scores = $stmt_scores->fetchAll(PDO::FETCH_ASSOC);
 
-        // b. Điểm danh
+        // Điểm danh
         $attendance_stats = ['present' => 0, 'late' => 0, 'absent' => 0];
         $stmt_att = $conn->prepare("
             SELECT trang_thai, COUNT(*) as cnt FROM diem_danh 
@@ -61,7 +61,7 @@ try {
             $attendance_stats[$row['trang_thai']] = $row['cnt'];
         }
 
-        // c. Nhận xét
+        // Nhận xét
         $stmt_cmt = $conn->prepare("SELECT nhan_xet FROM nhan_xet_thang WHERE so_bao_danh = ? AND lop_id = ? AND thang = ? AND nam = ?");
         $stmt_cmt->execute([$sbd, $lop_id, $month, $year]);
         $comment = $stmt_cmt->fetchColumn();
@@ -83,61 +83,68 @@ try {
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>In Báo Cáo </title>
+    <title>In Báo Cáo Hàng Loạt</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background: #eee; }
+        body { background: #eee; margin: 0; padding: 0; }
         .bulk-container { width: 210mm; margin: 0 auto; }
         
         .single-report-page {
             background: white;
-            padding: 40px;
+            padding: 30px 40px; 
             margin-bottom: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
             page-break-after: always;
             position: relative;
-            min-height: 297mm;
+            height: 296mm; 
+            max-height: 296mm;
             box-sizing: border-box;
+            overflow: hidden; 
         }
 
-        /* HEADER MỚI: Logo bên phải, Text bên trái */
         .report-header-print {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;
         }
-        .report-header-text h1 {
-            margin: 0; font-size: 24pt; color: #000; text-transform: uppercase;
-        }
-        .report-header-text p {
-            margin: 5px 0 0 0; font-size: 14pt; color: #333;
-        }
-        .report-header-logo img {
-            height: 100px; 
-            object-fit: contain;
-        }
+        .report-header-text h1 { margin: 0; font-size: 20pt; color: #000; text-transform: uppercase; }
+        .report-header-text p { margin: 2px 0 0 0; font-size: 12pt; color: #333; }
+        .report-header-logo img { height: 80px; object-fit: contain; }
 
-        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .info-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; }
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .info-card { border: 1px solid #ccc; padding: 10px; border-radius: 6px; font-size: 11pt; }
+        .info-card h4 { margin: 0 0 5px 0; font-size: 12pt; }
+        .info-card p { margin: 2px 0; }
         
         .chart-container { 
-            height: 300px; 
-            margin-bottom: 20px; 
-            border: 1px solid #eee;
-            padding: 10px;
-            background: #fff;
+            height: 220px; 
+            margin-bottom: 15px; 
+            border: 1px solid #eee; padding: 5px; background: #fff;
         }
 
+        h4.section-title { margin: 10px 0 5px 0; font-size: 12pt; border-bottom: 1px dashed #ccc; padding-bottom: 3px; }
+
+        /* TABLE COMPACT */
+        table { font-size: 10pt; width: 100%; border-collapse: collapse; }
+        th, td { padding: 4px 6px; border: 1px solid #000; text-align: center; }
+
+        .teacher-comment-section {
+            margin-top: 15px;
+            border: 2px solid #000;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12pt;
+            line-height: 1.4;
+            max-height: 150px; 
+            overflow: hidden;
+            position: relative;
+        }
+        
         @media print {
             body { background: white; }
             .no-print-bulk { display: none !important; }
             .bulk-container { width: 100%; margin: 0; }
-            .single-report-page { box-shadow: none; margin: 0; border: none; height: auto; min-height: 0; padding: 20px 40px !important; }
+            .single-report-page { margin: 0; border: none; padding: 20px 30px !important; height: 100vh !important; }
             .chart-container { page-break-inside: avoid; }
         }
     </style>
@@ -146,7 +153,7 @@ try {
 
     <div class="no-print-bulk" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
         <button onclick="window.print()" class="btn-print" style="box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-            <i class="fas fa-print"></i> In Tất Cả Báo Cáo
+            <i class="fas fa-print"></i> In Tất Cả
         </button>
     </div>
 
@@ -162,77 +169,81 @@ try {
                 <div class="report-header-print">
                     <div class="report-header-text">
                         <h1>PHIẾU BÁO CÁO HỌC TẬP</h1>
-                        <p>Tháng: <strong><?php echo "$month/$year"; ?></strong></p>
-                        <p>Lớp: <strong><?php echo htmlspecialchars($class_name); ?></strong></p>
+                        <p>Tháng: <strong><?php echo "$month/$year"; ?></strong> &nbsp;|&nbsp; Lớp: <strong><?php echo htmlspecialchars($class_name); ?></strong></p>
                     </div>
                     <div class="report-header-logo">
                         <img src="nhatdao_watermark.png" alt="Logo">
                     </div>
                 </div>
+
                 <div class="report-grid">
                     <div class="info-card">
-                        <h4 style="margin-top:0;"><i class="fas fa-user"></i> Học sinh</h4>
-                        <p>Họ tên: <strong><?php echo htmlspecialchars($data['info']['ho_ten']); ?></strong></p>
-                        <p>SBD: <?php echo htmlspecialchars($sbd); ?></p>
+                        <h4><i class="fas fa-user"></i> Học sinh</h4>
+                        <p><strong><?php echo htmlspecialchars($data['info']['ho_ten']); ?></strong> (SBD: <?php echo htmlspecialchars($sbd); ?>)</p>
                         <p>Trường: <?php echo htmlspecialchars($data['info']['truong'] ?? ''); ?></p>
                     </div>
                     <div class="info-card">
-                        <h4 style="margin-top:0;"><i class="fas fa-clock"></i> Chuyên cần</h4>
-                        <div style="display: flex; justify-content: space-between; text-align: center; font-weight: bold; margin-top: 10px;">
-                            <div style="color: green;">Có mặt<br><span style="font-size: 1.5em;"><?php echo $data['attendance']['present']; ?></span></div>
-                            <div style="color: orange;">Muộn<br><span style="font-size: 1.5em;"><?php echo $data['attendance']['late']; ?></span></div>
-                            <div style="color: red;">Vắng<br><span style="font-size: 1.5em;"><?php echo $data['attendance']['absent']; ?></span></div>
+                        <h4><i class="fas fa-clock"></i> Chuyên cần</h4>
+                        <div style="display: flex; justify-content: space-around; font-weight: bold;">
+                            <span style="color: green;">Có mặt: <?php echo $data['attendance']['present']; ?></span>
+                            <span style="color: orange;">Muộn: <?php echo $data['attendance']['late']; ?></span>
+                            <span style="color: red;">Vắng: <?php echo $data['attendance']['absent']; ?></span>
                         </div>
                     </div>
                 </div>
 
-                <h4><i class="fas fa-chart-area"></i> Biểu đồ phát triển năng lực</h4>
+                <h4 class="section-title"><i class="fas fa-chart-area"></i> Biểu đồ tổng kết điểm học sinh</h4>
                 <div class="chart-container">
                     <canvas id="<?php echo $chart_id; ?>"></canvas>
                 </div>
 
-                <h4><i class="fas fa-table"></i> Chi tiết điểm số</h4>
-                <table style="width:100%; border-collapse: collapse; border: 1px solid #000; font-size: 11pt;">
-                    <thead>
-                        <tr style="background: #f0f0f0;">
-                            <th style="border: 1px solid #000; padding: 8px;">Ngày</th>
-                            <th style="border: 1px solid #000; padding: 8px;">Bài kiểm tra</th>
-                            <th style="border: 1px solid #000; padding: 8px;">Điểm HS</th>
-                            <th style="border: 1px solid #000; padding: 8px;">TB Lớp</th>
-                            <th style="border: 1px solid #000; padding: 8px;">BTVN</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        $labels = []; $scores_hs = []; $scores_lop = [];
-                        if (empty($data['scores'])): ?>
-                            <tr><td colspan="5" style="border: 1px solid #000; padding: 8px; text-align: center;">Chưa có bài kiểm tra.</td></tr>
-                        <?php else: 
-                            foreach ($data['scores'] as $s):
-                                if ($s['diem_so'] !== null) {
-                                    $labels[] = date('d/m', strtotime($s['ngay_kiem_tra']));
-                                    $scores_hs[] = (float)$s['diem_so'];
-                                    $scores_lop[] = (float)$s['diem_tb_lop'];
-                                }
-                        ?>
-                            <tr>
-                                <td style="border: 1px solid #000; padding: 8px; text-align: center;"><?php echo date('d/m', strtotime($s['ngay_kiem_tra'])); ?></td>
-                                <td style="border: 1px solid #000; padding: 8px;"><?php echo htmlspecialchars($s['ten_cot_diem']); ?></td>
-                                <td style="border: 1px solid #000; padding: 8px; font-weight:bold; text-align:center; color: #007bff;"><?php echo $s['diem_so'] ?? '-'; ?></td>
-                                <td style="border: 1px solid #000; padding: 8px; text-align:center; color: #666;"><?php echo number_format((float)$s['diem_tb_lop'], 2); ?></td>
-                                <td style="border: 1px solid #000; padding: 8px; text-align:center;"><?php echo $s['diem_btvn'] ?? '-'; ?></td>
+                <h4 class="section-title"><i class="fas fa-table"></i> Chi tiết điểm số</h4>
+                <div style="min-height: 100px; margin-bottom: 10px;"> 
+                    <table>
+                        <thead>
+                            <tr style="background: #f0f0f0;">
+                                <th>Ngày</th>
+                                <th>Bài kiểm tra</th>
+                                <th>Điểm học sinh</th>
+                                <th>Trung bình Lớp</th>
+                                <th>BTVN</th>
                             </tr>
-                        <?php endforeach; endif; ?>
-                    </tbody>
-                </table>
-
-                <div style="margin-top: 20px; border: 2px solid #000; padding: 15px; border-radius: 8px; min-height: 120px;">
-                    <h4 style="margin-top: 0; text-decoration: underline;">NHẬN XÉT CỦA GIÁO VIÊN:</h4>
-                    <p style="font-family: 'Times New Roman', serif; font-size: 1.2em; font-weight: bold; margin-top: 10px;">
-                        <?php echo nl2br(htmlspecialchars($data['comment'] ?? '')); ?>
-                    </p>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $labels = []; $scores_hs = []; $scores_lop = [];
+                            if (empty($data['scores'])): ?>
+                                <tr><td colspan="5">Chưa có bài kiểm tra.</td></tr>
+                            <?php else: 
+                                foreach ($data['scores'] as $s):
+                                    if ($s['diem_so'] !== null) {
+                                        $labels[] = date('d/m', strtotime($s['ngay_kiem_tra']));
+                                        $scores_hs[] = (float)$s['diem_so'];
+                                        $scores_lop[] = (float)$s['diem_tb_lop'];
+                                    }
+                            ?>
+                                <tr>
+                                    <td><?php echo date('d/m', strtotime($s['ngay_kiem_tra'])); ?></td>
+                                    <td style="text-align: left;"><?php echo htmlspecialchars($s['ten_cot_diem']); ?></td>
+                                    <td style="font-weight:bold; color: #007bff;"><?php echo $s['diem_so'] ?? '-'; ?></td>
+                                    <td style="color: #666;"><?php echo number_format((float)$s['diem_tb_lop'], 2); ?></td>
+                                    <td><?php echo $s['diem_btvn'] ?? '-'; ?></td>
+                                </tr>
+                            <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+
+                <div class="teacher-comment-section">
+                    <span style="font-weight: bold; text-decoration: underline;">NHẬN XÉT CỦA GIÁO VIÊN:</span>
+                    <span style="font-family: 'Times New Roman', serif; margin-left: 5px;">
+                        <?php 
+                            $clean_comment = str_replace(array("\r", "\n"), ' ', $data['comment'] ?? '');
+                            echo htmlspecialchars($clean_comment); 
+                        ?>
+                    </span>
+                </div>
+                </div>
 
             <script>
                 new Chart(document.getElementById('<?php echo $chart_id; ?>'), {
@@ -241,43 +252,21 @@ try {
                         labels: <?php echo json_encode($labels); ?>,
                         datasets: [
                             {
-                                label: 'Điểm HS',
-                                data: <?php echo json_encode($scores_hs); ?>,
-                                borderColor: '#007bff',      
-                                backgroundColor: 'rgba(0, 123, 255, 0.1)', 
-                                borderWidth: 3,
-                                pointRadius: 5,
-                                pointBackgroundColor: '#fff',
-                                pointBorderColor: '#007bff',
-                                pointBorderWidth: 2,
-                                tension: 0, 
-                                fill: true  
+                                label: 'Điểm Học Sinh', data: <?php echo json_encode($scores_hs); ?>,
+                                borderColor: '#007bff', backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                borderWidth: 2, pointRadius: 3, tension: 0, fill: true
                             }, 
                             {
-                                label: 'TB Lớp',
-                                data: <?php echo json_encode($scores_lop); ?>,
-                                borderColor: '#e74c3c',       
-                                borderWidth: 2,
-                                borderDash: [5, 5],           
-                                pointRadius: 0,               
-                                tension: 0,                 
-                                fill: false
+                                label: 'Điểm Trung bình Lớp', data: <?php echo json_encode($scores_lop); ?>,
+                                borderColor: '#e74c3c', borderWidth: 1, borderDash: [3, 3],
+                                pointRadius: 0, tension: 0, fill: false
                             }
                         ]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { 
-                                min: 0, 
-                                max: 10,
-                                ticks: { stepSize: 1 }
-                            }
-                        },
-                        plugins: {
-                            legend: { display: true, position: 'top' }
-                        },
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { min: 0, max: 12, ticks: { stepSize: 1, callback: function(v){return v<=10?v:null} } } },
+                        plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
                         animation: false
                     }
                 });

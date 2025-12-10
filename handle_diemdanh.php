@@ -198,6 +198,32 @@ try {
         .action-buttons button, .action-buttons a {
             flex: 1; 
         }
+        .missing-data {
+        background-color: rgba(231, 76, 60, 0.2) !important; 
+        border: 2px solid #e74c3c !important;
+        transition: all 0.3s ease;
+    }
+
+    #error-message-box {
+        display: none; 
+        background-color: #e74c3c;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        50% { transform: translateX(5px); }
+        75% { transform: translateX(-5px); }
+        100% { transform: translateX(0); }
+    }
     </style>
 
 </head>
@@ -335,5 +361,51 @@ try {
         </form>
     </main>
     <script src="admin_main.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.querySelector('form[action="save_diemdanh.php"]');
+            
+            const errorBox = document.createElement('div');
+            const mainContent = document.querySelector('main.container');
+            mainContent.insertBefore(errorBox, mainContent.children[1]);
+
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+                let firstMissing = null;
+
+                const rows = document.querySelectorAll('tbody tr');
+
+                rows.forEach(row => row.classList.remove('missing-data'));
+                errorBox.style.display = 'none';
+
+                rows.forEach(row => {
+                    const radios = row.querySelectorAll('input[type="radio"]');
+                    
+                    if (radios.length > 0) {
+                        let isChecked = false;
+                        radios.forEach(r => {
+                            if (r.checked) isChecked = true;
+                        });
+
+                        if (!isChecked) {
+                            isValid = false;
+                            row.classList.add('missing-data'); 
+                            if (!firstMissing) firstMissing = row; 
+                        }
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault(); 
+                    
+                    errorBox.style.display = 'block';
+                    
+                    firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    alert("Bạn chưa chọn trạng thái (Có mặt/Vắng) cho một số học sinh. Vui lòng kiểm tra lại!");
+                }
+            });
+        });
+    </script>
 </body>
 </html>

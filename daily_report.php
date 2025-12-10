@@ -10,17 +10,17 @@ $ngay_filter = $_GET['ngay'] ?? date('Y-m-d');
 $all_classes = [];
 $processed_data = []; 
 $top_students = [];   
+$available_dates = []; 
 $class_name = "";
 $lesson_title = "";
 $lesson_desc = "";
 $max_score = -1;
-$is_lop2 = false;
-$is_lop8 = false; // Thêm biến kiểm tra Lớp 8
+$is_lop6 = false;
+$is_lop8 = false; 
 
 try {
     require_once 'db_config.php';
     
-    // 1. LẤY DANH SÁCH LỚP
     $user_role = $_SESSION['role'] ?? 'admin'; 
     if ($user_role === 'super') {
         $stmt_classes = $conn->prepare("SELECT id, ten_lop FROM lop_hoc ORDER BY ten_lop ASC");
@@ -33,31 +33,39 @@ try {
     }
     $all_classes = $stmt_classes->fetchAll(PDO::FETCH_ASSOC);
 
-    // 2. LẤY DỮ LIỆU
     if ($lop_id_filter) {
         $is_allowed = false;
         foreach ($all_classes as $class) {
             if ($class['id'] == $lop_id_filter) {
                 $is_allowed = true;
                 $class_name = $class['ten_lop'];
-                
-                // Kiểm tra loại lớp
-                if (strpos($class_name, '2-') === 0) $is_lop2 = true; // Lớp 2
-                if (strpos($class_name, '8-') === 0) $is_lop8 = true; // Lớp 8 (Mới)
-                
+                if (strpos($class_name, '6-') === 0 || strpos($class_name, '2-') === 0) $is_lop6 = true; 
+                if (strpos($class_name, '8-') === 0) $is_lop8 = true; 
                 break;
             }
         }
         if (!$is_allowed) die("BẠN KHÔNG CÓ QUYỀN TRUY CẬP LỚP NÀY!");
 
-        // 2.1 Lấy nội dung bài học
+        $current_month = date('m', strtotime($ngay_filter));
+        $current_year = date('Y', strtotime($ngay_filter));
+        
+        $stmt_dates = $conn->prepare("
+            SELECT DISTINCT ngay_diem_danh 
+            FROM diem_danh 
+            WHERE lop_id = ? 
+              AND EXTRACT(MONTH FROM ngay_diem_danh) = ? 
+              AND EXTRACT(YEAR FROM ngay_diem_danh) = ?
+            ORDER BY ngay_diem_danh DESC
+        ");
+        $stmt_dates->execute([$lop_id_filter, $current_month, $current_year]);
+        $available_dates = $stmt_dates->fetchAll(PDO::FETCH_COLUMN);
+
         $stmt_lesson = $conn->prepare("SELECT lesson_title, lesson_description FROM diem_danh WHERE lop_id = ? AND ngay_diem_danh = ? LIMIT 1");
         $stmt_lesson->execute([$lop_id_filter, $ngay_filter]);
         $lesson_row = $stmt_lesson->fetch(PDO::FETCH_ASSOC);
         $lesson_title = $lesson_row['lesson_title'] ?? null;
         $lesson_desc = $lesson_row['lesson_description'] ?? null;
 
-        // 2.2 Lấy danh sách
         $sql_report = "
             SELECT 
                 dhs.so_bao_danh, dhs.ho_ten,
@@ -87,11 +95,10 @@ try {
             $diem_test = ($row['diem_test'] !== null) ? (float)$row['diem_test'] : 0;
             $diem_btvn = ($row['diem_btvn'] !== null) ? (float)$row['diem_btvn'] : 0;
 
-            // Công thức tính điểm
             $diem_tich_luy = 0;
-            if ($is_lop2) {
+            if ($is_lop6) {
                 $diem_tich_luy = ($diem_cc + $diem_btvn) / 2;
-            } elseif (!$is_lop8) { // Lớp 8 không tính tích lũy
+            } elseif (!$is_lop8) { 
                 $diem_tich_luy = ($diem_test * 2 + $diem_cc + $diem_btvn) / 4;
             }
 
@@ -114,29 +121,21 @@ try {
                 $str = preg_replace("/(ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ)/", "u", $str);
                 $str = preg_replace("/(ỳ|ý|ỵ|ỷ|ỹ)/", "y", $str);
                 $str = preg_replace("/(đ)/", "d", $str);
-                // CHỮ HOA
                 $str = preg_replace("/(À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ)/", "A", $str);
                 $str = preg_replace("/(È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ)/", "E", $str);
                 $str = preg_replace("/(Ì|Í|Ị|Ỉ|Ĩ)/", "I", $str);
                 $str = preg_replace("/(Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ)/", "O", $str);
                 $str = preg_replace("/(Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ)/", "U", $str);
                 $str = preg_replace("/(Ỳ|Ý|Ỵ|Ỷ|Ỹ)/", "Y", $str);
-                $str = preg_replace("/(Đ)/", "D", $str); 
+                $str = preg_replace("/(Đ)/", "D", $str);
                 return strtolower($str);
             }
         }
-
         usort($processed_data, function($a, $b) {
             $tenA = convert_vi_to_en($a['ten']);
             $tenB = convert_vi_to_en($b['ten']);
-            
             $res = strcmp($tenA, $tenB);
-            
-            if ($res === 0) {
-                $hoA = convert_vi_to_en($a['ho_dem']);
-                $hoB = convert_vi_to_en($b['ho_dem']);
-                return strcmp($hoA, $hoB);
-            }
+            if ($res === 0) return strcmp(convert_vi_to_en($a['ho_dem']), convert_vi_to_en($b['ho_dem']));
             return $res;
         });
 
@@ -185,6 +184,48 @@ function getTrangThaiText($status) {
             border-left: 5px solid var(--primary-color);
             border-radius: 5px; color: var(--text-color); text-align: left; 
         }
+        
+        .history-dates {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .date-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 3px;
+            background: #e9ecef;
+            color: #333;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            border: 1px solid #ccc;
+        }
+        .date-badge:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        .date-badge.active {
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-color: var(--primary-color);
+        }
+        [data-theme="dark"] .date-badge {
+            background: #2c3e50;
+            color: #ecf0f1;
+            border-color: #444;
+        }
+        [data-theme="dark"] .date-badge.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
     </style>
 </head>
 <body class="admin-page-blue">
@@ -209,8 +250,7 @@ function getTrangThaiText($status) {
         <form class="filter-form" action="daily_report.php" method="GET">
             <div>
                 <label>Chọn lớp:</label>
-                <select name="lop_id" required>
-                    <option value="">-- Chọn một lớp --</option>
+                <select name="lop_id" required onchange="this.form.submit()"> <option value="">-- Chọn một lớp --</option>
                     <?php foreach ($all_classes as $class): ?>
                         <option value="<?php echo $class['id']; ?>" <?php if ($class['id'] == $lop_id_filter) echo 'selected'; ?>>
                             <?php echo htmlspecialchars($class['ten_lop']); ?>
@@ -222,11 +262,28 @@ function getTrangThaiText($status) {
                 <label>Ngày:</label>
                 <input type="date" name="ngay" id="ngay" value="<?php echo htmlspecialchars($ngay_filter); ?>" required>
             </div>
-            <button type="submit">Xem báo cáo</button>
         </form>
 
         <?php if ($lop_id_filter): ?>
-            <h3 style="margin-top: 30px;">Báo cáo lớp "<?php echo htmlspecialchars($class_name); ?>" - Ngày <?php echo date('d/m/Y', strtotime($ngay_filter)); ?></h3>
+            
+            <?php if (!empty($available_dates)): ?>
+                <div class="history-dates no-print">
+                    <div style="margin-bottom: 8px; font-weight: bold; color: var(--primary-color);">
+                        <i class="fas fa-history"></i> Lịch sử điểm danh tháng <?php echo date('m/Y', strtotime($ngay_filter)); ?>:
+                    </div>
+                    <?php foreach ($available_dates as $date): ?>
+                        <a href="daily_report.php?lop_id=<?php echo $lop_id_filter; ?>&ngay=<?php echo $date; ?>" 
+                           class="date-badge <?php echo ($date == $ngay_filter) ? 'active' : ''; ?>">
+                            <?php echo date('d/m', strtotime($date)); ?>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div class="history-dates no-print" style="color: gray; font-style: italic;">
+                    Chưa có dữ liệu điểm danh nào trong tháng này.
+                </div>
+            <?php endif; ?>
+            <h3 style="margin-top: 20px;">Báo cáo lớp "<?php echo htmlspecialchars($class_name); ?>" - Ngày <?php echo date('d/m/Y', strtotime($ngay_filter)); ?></h3>
 
             <?php if (!empty($lesson_title)): ?>
                 <div class="lesson-info">
@@ -251,21 +308,21 @@ function getTrangThaiText($status) {
                             <th style="width: 80px;">Trạng thái</th>
                             
                             <?php if (!$is_lop8): ?>
-                                <th style="width: 50px;">Chuyên Cần</th>
+                                <th style="width: 50px;">CC</th>
                             <?php endif; ?>
                             
-                            <?php if (!$is_lop2): ?>
-                                <th style="width: 50px;">Điểm Test</th>
+                            <?php if (!$is_lop6): ?>
+                                <th style="width: 50px;">Test</th>
                             <?php endif; ?>
 
-                            <th style="width: 50px;">Điểm BTVN</th>
+                            <th style="width: 50px;">BTVN</th>
 
                             <?php if (!$is_lop8): ?>
-                                <th style="width: 80px; background-color: rgba(0, 123, 255, 0.1);">Điểm tích Lũy</th>
+                                <th style="width: 80px; background-color: rgba(0, 123, 255, 0.1);">Tích Lũy</th>
                             <?php endif; ?>
                             
-                            <?php if ($is_lop2 || $is_lop8): ?>
-                                <th>Nhận xét của giáo viên</th>
+                            <?php if ($is_lop6 || $is_lop8): ?>
+                                <th>Nhận xét giáo viên</th>
                             <?php endif; ?>
                         </tr>
                     </thead>
@@ -285,7 +342,7 @@ function getTrangThaiText($status) {
                                         <td style="font-weight:bold; color:var(--primary-color);"><?php echo ($row['trang_thai_diem_danh']) ? $row['diem_cc_val'] : '-'; ?></td>
                                     <?php endif; ?>
                                     
-                                    <?php if (!$is_lop2): ?>
+                                    <?php if (!$is_lop6): ?>
                                         <td><?php echo ($row['diem_test'] !== null) ? $row['diem_test'] : '-'; ?></td>
                                     <?php endif; ?>
                                     
@@ -295,7 +352,7 @@ function getTrangThaiText($status) {
                                         <td style="font-weight:bold; color:#e74c3c; background-color: rgba(0, 123, 255, 0.05);"><?php echo number_format($row['diem_tich_luy'], 2); ?></td>
                                     <?php endif; ?>
                                     
-                                    <?php if ($is_lop2 || $is_lop8): ?>
+                                    <?php if ($is_lop6 || $is_lop8): ?>
                                         <td>
                                             <textarea class="comment-box" 
                                                       name="nhanxet[<?php echo htmlspecialchars($row['so_bao_danh']); ?>]" 
@@ -316,28 +373,19 @@ function getTrangThaiText($status) {
                 </p>
 
                 <?php if (!empty($top_students) && !$is_lop8): ?>
-                <div class="commendation-box">
-                    <div class="commendation-icon">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <div class="commendation-content">
-                        <h3>BẢNG VÀNG THÀNH TÍCH HÔM NAY</h3>
-                        <p class="subtitle">Congratulations</p>
-                        
-                        <div class="student-name">
-                            <?php echo implode('<br>', $top_students); ?>
+                    <div class="commendation-box">
+                        <div class="commendation-icon"><i class="fas fa-trophy"></i></div>
+                        <div class="commendation-content">
+                            <h3>BẢNG VÀNG HÔM NAY</h3>
+                            <p class="subtitle">Congratulations</p>
+                            <div class="student-name"><?php echo implode('<br>', $top_students); ?></div>
+                            <div class="score-badge">Điểm tích lũy: <strong><?php echo number_format($max_score, 2); ?></strong></div>
+                            <p class="encouragement">"Nhất Đạo Education làm mọi hành động vì học sinh !"</p>
                         </div>
-                        
-                        <div class="score-badge">
-                            Điểm tích lũy: <strong><?php echo number_format($max_score, 2); ?></strong>
-                        </div>
-                        
-                        <p class="encouragement">"Nhất Đạo Education- làm mọi hành động vì học sinh !"</p>
                     </div>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
                 
-                <?php if (!empty($processed_data) && ($is_lop2 || $is_lop8)): ?>
+                <?php if (!empty($processed_data) && ($is_lop6 || $is_lop8)): ?>
                     <button type="submit" class="submit-btn">Lưu tất cả nhận xét</button>
                 <?php endif; ?>
             </form>
