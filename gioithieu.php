@@ -140,18 +140,19 @@ if (isset($_GET['sbd_tra_cuu'])) {
         <h4><i class="fas fa-building-columns"></i> Về chúng tôi</h4>
         <p>Designed and Developed by Ngô Dương Huy.</p>
         <p>Hệ thống tra cứu điểm và quản lý học tập dành cho học sinh.</p>
+        <p><strong>© Copyright by:</strong> Ngô Dương Huy</p>
     </div>
 
     <div class="footer-column">
         <h4><i class="fas fa-map-marker-alt"></i> Địa chỉ</h4>
-        <p>136 đường Xuân Thuỷ, Phường Cầu Giấy, thành phố Hà Nội</p>
+        <p>Xóm 1, thôn Lại Đà, xã Đông Anh, thành phố Hà Nội</p>
     </div>
 
     <div class="footer-column">
         <h4><i class="fas fa-phone"></i> Liên hệ</h4>
-        <p><strong>© Copyright by:</strong> Ngô Dương Huy</p>
-        <p><strong>Điện thoại:</strong> 0961223066</p>
-        <p><strong>Email:</strong> ngohuy3092005@gmail.com</p>
+        <p>Ngô Duy Nhất Đạo</p>
+        <p><strong>Điện thoại:</strong> 0965601055</p>
+        <p><strong>Email:</strong> nhatdaoedu@gmail.com</p>
     </div>
 </footer>
 
