@@ -363,48 +363,82 @@ try {
     <script src="admin_main.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            const form = document.querySelector('form[action="save_diemdanh.php"]');
             
+            const form = document.querySelector('form[action="save_diemdanh.php"]');
             const errorBox = document.createElement('div');
-            const mainContent = document.querySelector('main.container');
-            mainContent.insertBefore(errorBox, mainContent.children[1]);
+            errorBox.id = 'error-message-box';
+            errorBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> CẢNH BÁO: Bạn chưa chọn trạng thái (Có mặt/Vắng)!';
+            
+            if (form) {
+                form.parentNode.insertBefore(errorBox, form);
+                
+                form.addEventListener('submit', function(e) {
+                    let isValid = true;
+                    let firstMissing = null;
+                    const rows = document.querySelectorAll('tbody tr');
 
-            form.addEventListener('submit', function(e) {
-                let isValid = true;
-                let firstMissing = null;
+                    rows.forEach(row => row.classList.remove('missing-data'));
+                    errorBox.style.display = 'none';
 
-                const rows = document.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        const radios = row.querySelectorAll('input[type="radio"]');
+                        if (radios.length > 0) {
+                            let isChecked = false;
+                            radios.forEach(r => { if (r.checked) isChecked = true; });
 
-                rows.forEach(row => row.classList.remove('missing-data'));
-                errorBox.style.display = 'none';
-
-                rows.forEach(row => {
-                    const radios = row.querySelectorAll('input[type="radio"]');
-                    
-                    if (radios.length > 0) {
-                        let isChecked = false;
-                        radios.forEach(r => {
-                            if (r.checked) isChecked = true;
-                        });
-
-                        if (!isChecked) {
-                            isValid = false;
-                            row.classList.add('missing-data'); 
-                            if (!firstMissing) firstMissing = row; 
+                            if (!isChecked) {
+                                isValid = false;
+                                row.classList.add('missing-data');
+                                if (!firstMissing) firstMissing = row;
+                            }
                         }
+                    });
+
+                    if (!isValid) {
+                        e.preventDefault();
+                        errorBox.style.display = 'block';
+                        firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        alert("Bạn chưa điền đủ thông tin điểm danh!");
                     }
                 });
+            }
 
-                if (!isValid) {
-                    e.preventDefault(); 
-                    
-                    errorBox.style.display = 'block';
-                    
-                    firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    
-                    alert("Bạn chưa chọn trạng thái (Có mặt/Vắng) cho một số học sinh. Vui lòng kiểm tra lại!");
-                }
-            });
+            const scoreInputs = Array.from(document.querySelectorAll('.score-input-mini'));
+            
+            if (scoreInputs.length > 0) {
+                const firstInput = scoreInputs[0];
+                const firstRow = firstInput.closest('tr');
+                const inputsPerRow = firstRow.querySelectorAll('.score-input-mini').length; 
+                
+                scoreInputs.forEach((input, index) => {
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                            e.preventDefault(); 
+
+                            let nextIndex;
+                            if (e.key === 'ArrowUp') {
+                                nextIndex = index - inputsPerRow; 
+                            } else {
+                                nextIndex = index + inputsPerRow;
+                            }
+
+                            if (scoreInputs[nextIndex]) {
+                                scoreInputs[nextIndex].focus();
+                                scoreInputs[nextIndex].select(); 
+                            }
+                        }
+                        
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const nextIndex = index + inputsPerRow;
+                            if (scoreInputs[nextIndex]) {
+                                scoreInputs[nextIndex].focus();
+                                scoreInputs[nextIndex].select();
+                            }
+                        }
+                    });
+                });
+            }
         });
     </script>
 </body>
