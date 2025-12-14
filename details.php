@@ -2,7 +2,6 @@
 session_start();
 require_once 'db_config.php';
 
-// Kiểm tra tham số đầu vào
 if (!isset($_GET['sbd']) || !isset($_GET['lop_id'])) {
     die('Vui lòng cung cấp số báo danh và lớp.');
 }
@@ -11,13 +10,13 @@ $sbd = $_GET['sbd'];
 $lop_id = $_GET['lop_id'];
 
 $hocsinh = null;
-$diem_chi_tiet = [];
-$comment_history = [];
+$scores = [];
+$comments = [];
 
 try {
     // 1. Lấy thông tin học sinh
     $stmt_info = $conn->prepare("
-        SELECT dhs.ho_ten, dhs.truong, lh.ten_lop
+        SELECT dhs.ho_ten, dhs.truong, dhs.so_bao_danh, lh.ten_lop
         FROM diem_hoc_sinh dhs
         JOIN users u ON LOWER(dhs.so_bao_danh) = LOWER(u.username)
         JOIN user_lop ul ON u.id = ul.user_id
@@ -27,353 +26,240 @@ try {
     $stmt_info->execute([$sbd, $lop_id]);
     $hocsinh = $stmt_info->fetch(PDO::FETCH_ASSOC);
 
-    if (!$hocsinh) {
-        die("Không tìm thấy học sinh với số báo danh " . htmlspecialchars($sbd) . " trong lớp này.");
-    }
+    if (!$hocsinh) die("Không tìm thấy học sinh này trong lớp.");
 
-    // 2. Lấy điểm chi tiết & Trung bình lớp
-    $sql_diem = "
-        WITH student_scores AS (
-            SELECT ten_cot_diem, ngay_kiem_tra, diem_so
-            FROM diem_thanh_phan
-            WHERE LOWER(so_bao_danh) = LOWER(?) AND lop_id = ?
-        ),
-        class_averages AS (
-            SELECT ten_cot_diem, ngay_kiem_tra, AVG(diem_so) AS diem_trung_binh_lop
-            FROM diem_thanh_phan
-            WHERE lop_id = ?
-            GROUP BY ten_cot_diem, ngay_kiem_tra
-        )
-        SELECT 
-            ss.ten_cot_diem, ss.ngay_kiem_tra, ss.diem_so, 
-            COALESCE(ca.diem_trung_binh_lop, 0) AS diem_trung_binh_lop
-        FROM student_scores ss
-        LEFT JOIN class_averages ca 
-        ON ss.ten_cot_diem = ca.ten_cot_diem AND ss.ngay_kiem_tra = ca.ngay_kiem_tra
-        ORDER BY ss.ngay_kiem_tra ASC;
+    // 2. Lấy điểm số (SẮP XẾP MỚI NHẤT LÊN ĐẦU CHO BẢNG)
+    $sql_score = "
+        SELECT t1.ngay_kiem_tra, t1.ten_cot_diem, t1.diem_so, t1.diem_btvn,
+        (
+            SELECT AVG(t2.diem_so) 
+            FROM diem_thanh_phan t2 
+            WHERE t2.lop_id = t1.lop_id 
+              AND t2.ngay_kiem_tra = t1.ngay_kiem_tra 
+              AND t2.ten_cot_diem = t1.ten_cot_diem
+        ) as diem_tb_lop
+        FROM diem_thanh_phan t1
+        WHERE t1.so_bao_danh = ? AND t1.lop_id = ?
+        ORDER BY t1.ngay_kiem_tra DESC  -- <--- ĐỔI THÀNH DESC ĐỂ NGÀY GẦN NHẤT LÊN ĐẦU
     ";
-    $stmt_diem = $conn->prepare($sql_diem);
-    $stmt_diem->execute([$sbd, $lop_id, $lop_id]);
-    $diem_chi_tiet = $stmt_diem->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_score = $conn->prepare($sql_score);
+    $stmt_score->execute([$sbd, $lop_id]);
+    $scores = $stmt_score->fetchAll(PDO::FETCH_ASSOC);
 
-    // 3. Lấy lịch sử nhận xét
-    $sql_comments = "
+    // 3. Lấy nhận xét
+    $stmt_cmt = $conn->prepare("
         SELECT thang, nam, nhan_xet 
-        FROM nhan_xet_thang
-        WHERE LOWER(so_bao_danh) = LOWER(?) AND lop_id = ? AND nhan_xet IS NOT NULL AND nhan_xet != ''
+        FROM nhan_xet_thang 
+        WHERE so_bao_danh = ? AND lop_id = ? 
         ORDER BY nam DESC, thang DESC
-    ";
-    $stmt_comments = $conn->prepare($sql_comments);
-    $stmt_comments->execute([$sbd, $lop_id]);
-    $comment_history = $stmt_comments->fetchAll(PDO::FETCH_ASSOC);
+    ");
+    $stmt_cmt->execute([$sbd, $lop_id]);
+    $comments = $stmt_cmt->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
     die("Lỗi hệ thống: " . $e->getMessage());
 }
-$conn = null;
+
+$chart_data = array_reverse($scores); 
+
+$labels = []; 
+$data_hs = []; 
+$data_lop = [];
+$test_titles = [];
+
+foreach ($chart_data as $s) {
+    if ($s['diem_so'] !== null) {
+        $labels[] = date('d/m', strtotime($s['ngay_kiem_tra']));
+        $data_hs[] = (float)$s['diem_so'];
+        $data_lop[] = number_format((float)$s['diem_tb_lop'], 2);
+        $test_titles[] = $s['ten_cot_diem']; 
+    }
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết điểm - <?php echo htmlspecialchars($hocsinh['ho_ten']); ?></title>
-    
-    <link rel="stylesheet" href="style.css"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Hồ sơ: <?php echo htmlspecialchars($hocsinh['ho_ten']); ?></title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* CSS BỔ SUNG ĐỂ FIX GIAO DIỆN MOBILE & MÀU TRẮNG */
-        body {
-            background-color: #f9f9f9; /* Nền trắng xám nhẹ cho dịu mắt */
-            color: #333;
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; color: #333; }
+        .container { max-width: 1000px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
-        .container {
-            max-width: 1000px;
-            margin: 20px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+        .page-header h2 { margin: 0; color: #007bff; font-size: 1.5rem; }
+        .btn-back { text-decoration: none; background: #eee; color: #333; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
+        .btn-back:hover { background: #ddd; }
 
-        .header {
-            background: white;
-            border-bottom: 1px solid #eee;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap; /* Cho phép xuống dòng trên mobile */
-        }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 30px; border: 1px solid #e9ecef; }
+        .info-item label { font-weight: bold; color: #6c757d; font-size: 0.85rem; display: block; margin-bottom: 4px; }
+        .info-item span { font-weight: 700; font-size: 1.1rem; color: #2c3e50; }
+
+        .chart-wrapper { position: relative; height: 350px; width: 100%; margin-bottom: 40px; }
+
+        .comments-section { display: flex; flex-direction: column; gap: 15px; margin-bottom: 40px; }
+        .comment-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; border-left: 5px solid #28a745; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #28a745; font-weight: bold; font-size: 1rem; }
+        .comment-text { font-size: 1rem; line-height: 1.5; color: #333; }
+
+        .table-responsive { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #007bff; color: white; white-space: nowrap; }
         
-        /* Responsive cho bảng */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 600px; /* Đảm bảo bảng không bị bóp méo trên mobile */
-        }
-        th, td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-        th { background-color: #f8f9fa; }
-
-        /* Responsive cho biểu đồ */
-        .chart-wrapper {
-            position: relative;
-            height: 400px;
-            width: 100%;
-        }
         @media (max-width: 768px) {
-            .chart-wrapper { height: 300px; }
-            .header { flex-direction: column; text-align: center; }
-            .auth-buttons { margin-top: 10px; }
-            h1 { font-size: 1.5em; }
+            .container { margin: 10px; padding: 15px; }
+            .chart-wrapper { height: 280px; }
+            h2 { font-size: 1.3rem; }
         }
-        
-        hr { border: 0; border-top: 1px solid #eee; margin: 30px 0; }
     </style>
 </head>
 <body>
-    
-    <header class="header">
-        <div class="logo">
-            <a href="index.php" style="text-decoration: none; color: #007bff;"> 
-                <h2 style="margin: 0;"><i class="fas fa-search"></i> Tra cứu điểm học sinh</h2>
-            </a>
-        </div>
-        <div class="auth-buttons">
-            <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                <button onclick="history.back()" style="padding: 8px 15px; cursor: pointer;">Quay lại Admin</button>
-            <?php else: ?>
-                <a href="login.php"><button style="padding: 8px 15px; cursor: pointer;">Đăng nhập Giáo Viên</button></a>
-            <?php endif; ?>
-        </div>
-    </header>
-    
-    <main class="container">
-        <h1 style="color: #007bff;">Thông tin học sinh</h1>
-        
-        <div class="profile-info">
-            <p><strong>Họ và tên:</strong> <?php echo htmlspecialchars($hocsinh['ho_ten']); ?></p>
-            <p><strong>Mã học sinh:</strong> <?php echo htmlspecialchars($sbd); ?></p>
-            <p><strong>Trường:</strong> <?php echo htmlspecialchars($hocsinh['truong'] ?? ''); ?></p>
-            <p><strong>Lớp:</strong> <?php echo htmlspecialchars($hocsinh['ten_lop']); ?></p>
-        </div>
 
-        <hr>
+<div class="container">
+    <div class="page-header">
+        <h2><i class="fas fa-user-graduate"></i> Chi tiết điểm số học sinh</h2>
+        <a href="index.php" class="btn-back"><i class="fas fa-arrow-left"></i> Quay lại</a>
+    </div>
 
-        <h2><i class="fas fa-chart-line"></i> Biểu đồ thống kê</h2>
-        <div class="chart-wrapper">
-            <canvas id="myChart"></canvas>
+    <div class="info-grid">
+        <div class="info-item"><label>Họ và tên</label><span><?php echo htmlspecialchars($hocsinh['ho_ten']); ?></span></div>
+        <div class="info-item"><label>Số báo danh</label><span><?php echo htmlspecialchars($hocsinh['so_bao_danh']); ?></span></div>
+        <div class="info-item"><label>Lớp</label><span><?php echo htmlspecialchars($hocsinh['ten_lop']); ?></span></div>
+        <div class="info-item"><label>Trường</label><span><?php echo htmlspecialchars($hocsinh['truong'] ?? 'Chưa cập nhật'); ?></span></div>
+    </div>
+
+    <h3 style="color: #495057; border-bottom: 2px solid #eee; padding-bottom: 8px;">
+        <i class="fas fa-chart-line"></i> Biểu đồ thống kê
+    </h3>
+    <div class="chart-wrapper">
+        <canvas id="scoreChart"></canvas>
+    </div>
+
+    <?php if (!empty($comments)): ?>
+        <h3 style="color: #495057; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-top: 30px;">
+            <i class="fas fa-comments"></i> Nhận xét giáo viên
+        </h3>
+        <div class="comments-section">
+            <?php foreach ($comments as $cmt): ?>
+                <div class="comment-card">
+                    <div class="comment-header">
+                        <i class="far fa-calendar-check"></i> THÁNG <?php echo $cmt['thang'] . '/' . $cmt['nam']; ?>
+                    </div>
+                    <div class="comment-text"><?php echo nl2br(htmlspecialchars($cmt['nhan_xet'])); ?></div>
+                </div>
+            <?php endforeach; ?>
         </div>
-        
-        <hr>
+    <?php endif; ?>
 
-        <h2><i class="fas fa-comments"></i> Nhận xét tổng thể hàng tháng</h2>
-        <div class="table-responsive">
-            <table>
-                <thead>
+    <h3 style="color: #495057; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-top: 30px;">
+        <i class="fas fa-list-ol"></i> Bảng điểm chi tiết
+    </h3>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th>Bài kiểm tra</th>
+                    <th style="text-align: center;">Điểm Học Sinh</th>
+                    <th style="text-align: center;">Điểm Trung Bình Lớp</th>
+                    <th style="text-align: center;">BTVN</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($scores)): ?>
+                    <tr><td colspan="5" style="text-align: center; padding: 20px;">Chưa có dữ liệu điểm.</td></tr>
+                <?php else: foreach ($scores as $s): ?>
                     <tr>
-                        <th style="width: 150px;">Thời gian</th>
-                        <th>Nhận xét của giáo viên</th>
+                        <td><?php echo date('d/m/Y', strtotime($s['ngay_kiem_tra'])); ?></td>
+                        <td style="font-weight: 500; color: #333;"><?php echo htmlspecialchars($s['ten_cot_diem']); ?></td>
+                        <td style="font-weight: 800; color: #007bff; font-size: 1.1em; text-align: center;"><?php echo $s['diem_so'] !== null ? $s['diem_so'] : '-'; ?></td>
+                        <td style="color: #666; text-align: center;"><?php echo number_format((float)$s['diem_tb_lop'], 2); ?></td>
+                        <td style="text-align: center;"><?php echo $s['diem_btvn'] !== null ? $s['diem_btvn'] : '-'; ?></td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($comment_history)): ?>
-                        <tr><td colspan="2">Chưa có nhận xét nào.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($comment_history as $comment): ?>
-                            <tr>
-                                <td><strong><?php echo htmlspecialchars($comment['thang']); ?>/<?php echo htmlspecialchars($comment['nam']); ?></strong></td>
-                                <td><?php echo nl2br(htmlspecialchars($comment['nhan_xet'])); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endforeach; endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-        <hr>
+<script>
+    const labels = <?php echo json_encode($labels); ?>;
+    const dataHS = <?php echo json_encode($data_hs); ?>;
+    const dataLop = <?php echo json_encode($data_lop); ?>;
+    const testTitles = <?php echo json_encode($test_titles); ?>;
 
-        <h2><i class="fas fa-list-ol"></i> Chi tiết các đầu điểm</h2>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Ngày kiểm tra</th>
-                        <th>Tên bài kiểm tra</th>
-                        <th>Điểm số</th>
-                        <th>TB Lớp</th> 
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($diem_chi_tiet as $diem): ?>
-                        <tr>
-                            <td><?php echo date('d/m/Y', strtotime($diem['ngay_kiem_tra'])); ?></td>
-                            <td><?php echo htmlspecialchars($diem['ten_cot_diem']); ?></td>
-                            <td style="font-weight: bold; color: #007bff;"><?php echo htmlspecialchars($diem['diem_so']); ?></td>
-                            <td style="color: #666;"><?php echo number_format((float)$diem['diem_trung_binh_lop'], 2); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    
-                    <?php if (empty($diem_chi_tiet)): ?>
-                        <tr><td colspan="4">Chưa có dữ liệu điểm.</td></tr> 
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+    const ctx = document.getElementById('scoreChart');
 
-    </main>
-
-    <footer class="footer" style="background: #333; color: white; padding: 20px; margin-top: 40px;">
-        <div style="max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-            <div class="footer-column">
-                <h4><i class="fas fa-building-columns"></i> Về chúng tôi</h4>
-                <p>Hệ thống tra cứu điểm và quản lý học tập dành cho học sinh.</p>
-                <p><strong>© Copyright by:</strong> Ngô Dương Huy</p>
-            </div>
-            <div class="footer-column">
-                <h4><i class="fas fa-map-marker-alt"></i> Địa chỉ</h4>
-                <p>Xóm 1, thôn Lại Đà, xã Đông Anh, thành phố Hà Nội</p>
-            </div>
-            <div class="footer-column">
-                <h4><i class="fas fa-phone"></i> Liên hệ</h4>
-                <p><strong>Điện thoại:</strong> 0965601055</p>
-                <p><strong>Email:</strong> nhatdaoedu@gmail.com</p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <script>
-        // 1. Dữ liệu từ PHP
-        const diemData = <?php echo json_encode($diem_chi_tiet); ?>;
-        
-        // --- XỬ LÝ LABEL: Chỉ lấy ngày tháng năm ---
-        function formatDateLabel(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('vi-VN'); // Ra định dạng dd/mm/yyyy
-        }
-
-        const labels = diemData.map(d => formatDateLabel(d.ngay_kiem_tra));
-        const studentScores = diemData.map(d => parseFloat(d.diem_so));
-        const classAvgScores = diemData.map(d => parseFloat(d.diem_trung_binh_lop).toFixed(2));
-
-        // 2. HÀM TÍNH HỒI QUY TUYẾN TÍNH (Giữ nguyên logic của bạn)
-        function calculateLinearRegression(yValues) {
-            const n = yValues.length;
-            if (n === 0) return [];
-
-            let sumX = 0; let sumY = 0; let sumXY = 0; let sumXX = 0;
-
-            for (let i = 0; i < n; i++) {
-                sumX += i;
-                sumY += yValues[i];
-                sumXY += i * yValues[i];
-                sumXX += i * i;
-            }
-
-            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-            const intercept = (sumY - slope * sumX) / n;
-
-            const regressionLine = [];
-            for (let i = 0; i < n; i++) {
-                let val = slope * i + intercept;
-                val = Math.max(0, Math.min(10, val)); 
-                regressionLine.push(val);
-            }
-            return regressionLine;
-        }
-
-        const trendData = calculateLinearRegression(studentScores);
-
-        // 3. VẼ BIỂU ĐỒ
-        const ctx = document.getElementById('myChart');
+    if (labels.length > 0) {
         new Chart(ctx, {
-            type: 'line', 
+            type: 'line',
             data: {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Điểm test học sinh',
-                        data: studentScores,
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                        tension: 0, 
+                        label: 'Điểm Học Sinh',
+                        data: dataHS,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
                         borderWidth: 3,
-                        pointRadius: 6, 
+                        pointRadius: 6,
                         pointHoverRadius: 8,
-                        order: 2
+                        pointBackgroundColor: '#fff',
+                        fill: true,
+                        tension: 0
                     },
                     {
-                        label: 'Hồi quy tuyến tính (Xu hướng)', 
-                        data: trendData,
-                        borderColor: 'rgb(255, 159, 64)',
-                        borderWidth: 2,
-                        borderDash: [10, 5],
-                        pointRadius: 0, 
-                        fill: false,
-                        tension: 0,
-                        order: 1
-                    },
-                    {
-                        label: 'Trung bình lớp',
-                        data: classAvgScores,
-                        borderColor: 'rgb(153, 102, 255)',
-                        backgroundColor: 'rgba(153, 102, 255, 0.1)',
-                        tension: 0,
+                        label: 'Điểm Trung Bình Lớp',
+                        data: dataLop,
+                        borderColor: '#ffc107',
                         borderWidth: 2,
                         borderDash: [5, 5],
-                        pointRadius: 4,
-                        fill: false,
-                        order: 3
+                        pointRadius: 0,
+                        tension: 0,
+                        fill: false
                     }
                 ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, 
-
+                maintainAspectRatio: false,
                 interaction: {
-                    mode: 'nearest', 
+                    mode: 'nearest',
                     intersect: true, 
+                    axis: 'x'
                 },
-                
-                scales: { 
-                    y: { 
-                        min: 0, 
-                        max: 12, 
-                        ticks: { stepSize: 1, callback: function(v){return v<=10?v:null} } 
-                    } 
+                scales: {
+                    y: { min: 0, max: 12, ticks: { stepSize: 1, callback: function(v){return v<=10?v:null} } },
+                    x: { grid: { display: false } }
                 },
-                
                 plugins: {
-                    legend: { position: 'top' },
                     tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.85)',
+                        padding: 12,
                         callbacks: {
-                            afterLabel: function(context) {
-                                const index = context.dataIndex;
-                                const lessonName = diemData[index].ten_cot_diem;
-                                return 'Bài: ' + lessonName;
+                            title: function(context) {
+                                return testTitles[context[0].dataIndex];
+                            },
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw;
                             }
                         }
-                    }
+                    },
+                    legend: { position: 'top' }
                 }
             }
         });
-    </script>
+    } else {
+        ctx.style.display = 'none';
+        document.querySelector('.chart-wrapper').innerHTML = 
+            '<div style="text-align:center; padding-top:130px; color:#999; font-style:italic;">Chưa có dữ liệu biểu đồ</div>';
+    }
+</script>
+
 </body>
 </html>

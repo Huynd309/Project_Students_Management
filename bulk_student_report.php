@@ -33,23 +33,11 @@ try {
     $stmt_list->execute([$lop_id]);
     $student_list = $stmt_list->fetchAll(PDO::FETCH_ASSOC);
 
-    // 3. Vòng lặp lấy dữ liệu
+    // 3. Vòng lặp lấy dữ liệu từng học sinh
     foreach ($student_list as $std) {
         $sbd = $std['so_bao_danh'];
         
-        // Điểm số
-        $stmt_scores = $conn->prepare("
-            SELECT t1.ngay_kiem_tra, t1.ten_cot_diem, t1.diem_so, t1.diem_btvn,
-            (SELECT AVG(t2.diem_so) FROM diem_thanh_phan t2 WHERE t2.lop_id = t1.lop_id AND t2.ngay_kiem_tra = t1.ngay_kiem_tra AND t2.ten_cot_diem = t1.ten_cot_diem) as diem_tb_lop
-            FROM diem_thanh_phan t1
-            WHERE t1.so_bao_danh = ? AND t1.lop_id = ? 
-              AND EXTRACT(MONTH FROM t1.ngay_kiem_tra) = ? AND EXTRACT(YEAR FROM t1.ngay_kiem_tra) = ?
-            ORDER BY t1.ngay_kiem_tra ASC
-        ");
-        $stmt_scores->execute([$sbd, $lop_id, $month, $year]);
-        $scores = $stmt_scores->fetchAll(PDO::FETCH_ASSOC);
-
-        // Điểm danh
+        // A. Lấy dữ liệu Điểm danh & Tính điểm TB Chuyên cần (CC)
         $attendance_stats = ['present' => 0, 'late' => 0, 'absent' => 0];
         $stmt_att = $conn->prepare("
             SELECT trang_thai, COUNT(*) as cnt FROM diem_danh 
@@ -61,7 +49,26 @@ try {
             $attendance_stats[$row['trang_thai']] = $row['cnt'];
         }
 
-        // Nhận xét
+        // Tính điểm TB Chuyên cần (Thang 10)
+        $total_sessions = $attendance_stats['present'] + $attendance_stats['late'] + $attendance_stats['absent'];
+        $total_cc_score = ($attendance_stats['present'] * 10) + ($attendance_stats['late'] * 7) + ($attendance_stats['absent'] * 0);
+        
+        // Nếu chưa học buổi nào thì mặc định 10, ngược lại tính trung bình
+        $avg_cc_score = ($total_sessions > 0) ? ($total_cc_score / $total_sessions) : 10;
+
+
+        // B. Lấy dữ liệu Điểm số
+        $stmt_scores = $conn->prepare("
+            SELECT t1.ngay_kiem_tra, t1.ten_cot_diem, t1.diem_so, t1.diem_btvn,
+            (SELECT AVG(t2.diem_so) FROM diem_thanh_phan t2 WHERE t2.lop_id = t1.lop_id AND t2.ngay_kiem_tra = t1.ngay_kiem_tra AND t2.ten_cot_diem = t1.ten_cot_diem) as diem_tb_lop
+            FROM diem_thanh_phan t1
+            WHERE t1.so_bao_danh = ? AND t1.lop_id = ? 
+              AND EXTRACT(MONTH FROM t1.ngay_kiem_tra) = ? AND EXTRACT(YEAR FROM t1.ngay_kiem_tra) = ?
+            ORDER BY t1.ngay_kiem_tra ASC
+        ");
+        $stmt_scores->execute([$sbd, $lop_id, $month, $year]);
+        $scores = $stmt_scores->fetchAll(PDO::FETCH_ASSOC);
+
         $stmt_cmt = $conn->prepare("SELECT nhan_xet FROM nhan_xet_thang WHERE so_bao_danh = ? AND lop_id = ? AND thang = ? AND nam = ?");
         $stmt_cmt->execute([$sbd, $lop_id, $month, $year]);
         $comment = $stmt_cmt->fetchColumn();
@@ -70,6 +77,7 @@ try {
             'info' => $std,
             'scores' => $scores,
             'attendance' => $attendance_stats,
+            'avg_cc' => $avg_cc_score, 
             'comment' => $comment
         ];
     }
@@ -83,7 +91,7 @@ try {
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>In Báo Cáo Hàng Loạt</title>
+    <title>In Báo Cáo Tháng <?php echo htmlspecialchars($month) . '/' . htmlspecialchars($year); ?></title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -97,7 +105,7 @@ try {
             margin-bottom: 20px;
             page-break-after: always;
             position: relative;
-            height: 296mm; 
+            height: 296mm; /* Khổ A4 cố định */
             max-height: 296mm;
             box-sizing: border-box;
             overflow: hidden; 
@@ -114,17 +122,16 @@ try {
         .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         .info-card { border: 1px solid #ccc; padding: 10px; border-radius: 6px; font-size: 11pt; }
         .info-card h4 { margin: 0 0 5px 0; font-size: 12pt; }
-        .info-card p { margin: 2px 0; }
         
         .chart-container { 
-            height: 220px; 
+            height: 220px; /* Chart nhỏ gọn */
             margin-bottom: 15px; 
             border: 1px solid #eee; padding: 5px; background: #fff;
         }
 
         h4.section-title { margin: 10px 0 5px 0; font-size: 12pt; border-bottom: 1px dashed #ccc; padding-bottom: 3px; }
 
-        /* TABLE COMPACT */
+        /* Bảng điểm gọn */
         table { font-size: 10pt; width: 100%; border-collapse: collapse; }
         th, td { padding: 4px 6px; border: 1px solid #000; text-align: center; }
 
@@ -137,7 +144,6 @@ try {
             line-height: 1.4;
             max-height: 150px; 
             overflow: hidden;
-            position: relative;
         }
         
         @media print {
@@ -162,6 +168,9 @@ try {
         <?php foreach ($students_data as $data): 
             $sbd = $data['info']['so_bao_danh'];
             $chart_id = "chart_" . $sbd;
+            
+            // Lấy điểm TB CC đã tính ở trên
+            $avg_cc = $data['avg_cc']; 
         ?>
             
             <div class="single-report-page">
@@ -179,7 +188,7 @@ try {
                 <div class="report-grid">
                     <div class="info-card">
                         <h4><i class="fas fa-user"></i> Học sinh</h4>
-                        <p><strong><?php echo htmlspecialchars($data['info']['ho_ten']); ?></strong> (SBD: <?php echo htmlspecialchars($sbd); ?>)</p>
+                        <p><strong><?php echo htmlspecialchars($data['info']['ho_ten']); ?></strong> (<?php echo htmlspecialchars($sbd); ?>)</p>
                         <p>Trường: <?php echo htmlspecialchars($data['info']['truong'] ?? ''); ?></p>
                     </div>
                     <div class="info-card">
@@ -192,7 +201,7 @@ try {
                     </div>
                 </div>
 
-                <h4 class="section-title"><i class="fas fa-chart-area"></i> Biểu đồ tổng kết điểm học sinh</h4>
+                <h4 class="section-title"><i class="fas fa-chart-line"></i> Biểu đồ điểm tích lũy</h4>
                 <div class="chart-container">
                     <canvas id="<?php echo $chart_id; ?>"></canvas>
                 </div>
@@ -204,22 +213,32 @@ try {
                             <tr style="background: #f0f0f0;">
                                 <th>Ngày</th>
                                 <th>Bài kiểm tra</th>
-                                <th>Điểm học sinh</th>
-                                <th>Trung bình Lớp</th>
+                                <th>Điểm HS</th>
+                                <th>TB Lớp</th>
                                 <th>BTVN</th>
-                            </tr>
+                                <th>Điểm Tích Lũy</th> </tr>
                         </thead>
                         <tbody>
                             <?php 
-                            $labels = []; $scores_hs = []; $scores_lop = [];
+                            $labels = []; $scores_tichluy = []; $scores_lop = [];
+                            
                             if (empty($data['scores'])): ?>
-                                <tr><td colspan="5">Chưa có bài kiểm tra.</td></tr>
+                                <tr><td colspan="6">Chưa có bài kiểm tra.</td></tr>
                             <?php else: 
                                 foreach ($data['scores'] as $s):
                                     if ($s['diem_so'] !== null) {
                                         $labels[] = date('d/m', strtotime($s['ngay_kiem_tra']));
-                                        $scores_hs[] = (float)$s['diem_so'];
-                                        $scores_lop[] = (float)$s['diem_tb_lop'];
+                                        
+                                        // --- TÍNH ĐIỂM TÍCH LŨY ---
+                                        $diem_test = (float)$s['diem_so'];
+                                        $diem_btvn = ($s['diem_btvn'] !== null) ? (float)$s['diem_btvn'] : 0;
+                                        
+                                        // Công thức: (Test*2 + CC + BTVN) / 4
+                                        // Lưu ý: $avg_cc là điểm chuyên cần trung bình của cả tháng
+                                        $tich_luy = ($diem_test * 2 + $avg_cc + $diem_btvn) / 4;
+                                        
+                                        $scores_tichluy[] = round($tich_luy, 2);
+                                        $scores_lop[] = (float)$s['diem_tb_lop']; // Vẫn giữ TB lớp là điểm Test để tham chiếu
                                     }
                             ?>
                                 <tr>
@@ -228,6 +247,10 @@ try {
                                     <td style="font-weight:bold; color: #007bff;"><?php echo $s['diem_so'] ?? '-'; ?></td>
                                     <td style="color: #666;"><?php echo number_format((float)$s['diem_tb_lop'], 2); ?></td>
                                     <td><?php echo $s['diem_btvn'] ?? '-'; ?></td>
+                                    
+                                    <td style="font-weight:bold; color: #e74c3c;">
+                                        <?php echo isset($tich_luy) ? number_format($tich_luy, 2) : '-'; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; endif; ?>
                         </tbody>
@@ -243,7 +266,8 @@ try {
                         ?>
                     </span>
                 </div>
-                </div>
+
+            </div>
 
             <script>
                 new Chart(document.getElementById('<?php echo $chart_id; ?>'), {
@@ -252,14 +276,17 @@ try {
                         labels: <?php echo json_encode($labels); ?>,
                         datasets: [
                             {
-                                label: 'Điểm Học Sinh', data: <?php echo json_encode($scores_hs); ?>,
-                                borderColor: '#007bff', backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                                borderWidth: 2, pointRadius: 3, tension: 0, fill: true
+                                label: 'Điểm Tích Lũy Học Sinh', 
+                                data: <?php echo json_encode($scores_tichluy); ?>, 
+                                borderColor: '#50ceeb', 
+                                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                                borderWidth: 3, pointRadius: 4, tension: 0, fill: true
                             }, 
                             {
-                                label: 'Điểm Trung bình Lớp', data: <?php echo json_encode($scores_lop); ?>,
-                                borderColor: '#e74c3c', borderWidth: 1, borderDash: [3, 3],
-                                pointRadius: 0, tension: 0, fill: false
+                                label: 'Trung Bình', 
+                                data: <?php echo json_encode($scores_lop); ?>,
+                                borderColor: '#95a5a6', borderWidth: 2, borderDash: [5, 5],
+                                pointRadius: 0, pointRadius: 3, tension: 0, fill: false
                             }
                         ]
                     },

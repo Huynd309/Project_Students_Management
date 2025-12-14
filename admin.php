@@ -275,9 +275,9 @@ if ($filter_khoi) {
 </div> <div class="admin-column">
                 <h2>Thêm học sinh mới</h2>
                 <p style="color: #e74c3c; font-style: italic; font-size: 0.9em; margin-bottom: 15px;">
-                <i class="fas fa-exclamation-circle"></i> Chú ý: Số báo danh phải theo quy ước <strong>NDxxyy</strong> 
-                (trong đó <strong>xx</strong> là lớp, <strong>yy</strong> là số thứ tự). <br>
-                Ví dụ: Lớp 12 là <strong>ND1201</strong>, Lớp 10 là <strong>ND1005</strong>.
+                <i class="fas fa-exclamation-circle"></i> Chú ý: Số báo danh phải theo quy ước <strong>NDxxyyzz</strong> 
+                (trong đó  <strong>xx</strong> lớp học sinh đó học, <strong>yy</strong> năm sinh học sinh đó, <strong>zz</strong> là số thứ tự). <br>
+                Ví dụ: Học sinh lớp 12 (sinh năm 2008), học lớp Toán 12 thì sẽ là NDT0801.
                 </p>
                 <form class="form-add" action="handle_add_student.php" method="POST">
                     <label>Số báo danh:</label>

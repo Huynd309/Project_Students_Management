@@ -1,76 +1,59 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
-    die("TRUY CẬP BỊ TỪ CHỐI!");
-}
-
-if ($_SERVER["REQUEST_METHOD"] != "POST") {
-    die("Phương thức không hợp lệ.");
-}
-
-$lop_id = $_POST['lop_id'];
-$ngay_diem_danh = $_POST['ngay_diem_danh'];
-$lesson_title = $_POST['lesson_title'];
-$lesson_description = $_POST['lesson_description'] ?? '';
-
-$statuses = $_POST['status'] ?? [];     
-$scores_test = $_POST['scores_test'] ?? []; 
-$scores_btvn = $_POST['scores_btvn'] ?? []; 
-$redirect_url = "handle_diemdanh.php?lop_id=$lop_id&ngay=$ngay_diem_danh&lesson_title=" . urlencode($lesson_title);
-
 require_once 'db_config.php';
 
-try {
-    $conn->beginTransaction(); 
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $lop_id = $_POST['lop_id'];
+    $ngay_diem_danh = $_POST['ngay_diem_danh'];
+    $lesson_title = $_POST['lesson_title'];
+    $lesson_description = $_POST['lesson_description'] ?? '';
+    
+    $test_title = $_POST['test_title']; 
+    if (empty(trim($test_title))) $test_title = $lesson_title;
 
-    // --- VIỆC 1: LƯU ĐIỂM DANH + MÔ TẢ BÀI HỌC ---
-    $sql_dd = "
-        INSERT INTO diem_danh (so_bao_danh, lop_id, ngay_diem_danh, trang_thai, lesson_title, lesson_description)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT (so_bao_danh, lop_id, ngay_diem_danh)
-        DO UPDATE SET 
-            trang_thai = EXCLUDED.trang_thai, 
-            lesson_title = EXCLUDED.lesson_title,
-            lesson_description = EXCLUDED.lesson_description
-    ";
-    $stmt_dd = $conn->prepare($sql_dd);
+    $status_data = $_POST['status'] ?? [];
+    $scores_test = $_POST['scores_test'] ?? [];
+    $scores_btvn = $_POST['scores_btvn'] ?? [];
 
-    foreach ($statuses as $sbd => $trang_thai) {
-        $stmt_dd->execute([$sbd, $lop_id, $ngay_diem_danh, $trang_thai, $lesson_title, $lesson_description]);
-    }
+    try {
+        $conn->beginTransaction();
 
-    if (!empty($lesson_title)) {
-        $sql_score = "
-            INSERT INTO diem_thanh_phan (so_bao_danh, lop_id, ngay_kiem_tra, ten_cot_diem, diem_so, diem_btvn)
-            VALUES (?, ?, ?, ?, ?, ?)
-            -- SỬA: Chỉ check trùng theo Ngày (bỏ ten_cot_diem trong ngoặc này)
-            ON CONFLICT (so_bao_danh, lop_id, ngay_kiem_tra) 
-            DO UPDATE SET 
-                ten_cot_diem = EXCLUDED.ten_cot_diem, -- Cập nhật tên bài mới nếu sửa
-                diem_so = EXCLUDED.diem_so,
-                diem_btvn = EXCLUDED.diem_btvn
-        ";
-        $stmt_score = $conn->prepare($sql_score);
+        foreach ($status_data as $sbd => $status) {
+            $stmt = $conn->prepare("
+                INSERT INTO diem_danh (lop_id, so_bao_danh, ngay_diem_danh, trang_thai, lesson_title, lesson_description)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT (lop_id, so_bao_danh, ngay_diem_danh) 
+                DO UPDATE SET trang_thai = EXCLUDED.trang_thai, 
+                              lesson_title = EXCLUDED.lesson_title,
+                              lesson_description = EXCLUDED.lesson_description
+            ");
+            $stmt->execute([$lop_id, $sbd, $ngay_diem_danh, $status, $lesson_title, $lesson_description]);
 
-        foreach ($statuses as $sbd => $trang_thai) {
-            $test = $scores_test[$sbd] ?? null;
-            $btvn = $scores_btvn[$sbd] ?? null;
-            
-            if ($test !== null || $btvn !== null || !empty($lesson_title)) {
-                $test_val = ($test === '') ? null : $test;
-                $btvn_val = ($btvn === '') ? null : $btvn;
+            // 2. LƯU ĐIỂM SỐ (Dùng test_title làm ten_cot_diem)
+            // Xóa điểm cũ của ngày này để tránh trùng lặp tên bài
+            $stmt_del = $conn->prepare("DELETE FROM diem_thanh_phan WHERE lop_id=? AND so_bao_danh=? AND ngay_kiem_tra=?");
+            $stmt_del->execute([$lop_id, $sbd, $ngay_diem_danh]);
 
-                $stmt_score->execute([$sbd, $lop_id, $ngay_diem_danh, $lesson_title, $test_val, $btvn_val]);
+            $diem_test = isset($scores_test[$sbd]) && $scores_test[$sbd] !== '' ? $scores_test[$sbd] : null;
+            $diem_btvn = isset($scores_btvn[$sbd]) && $scores_btvn[$sbd] !== '' ? $scores_btvn[$sbd] : null;
+
+            if ($diem_test !== null || $diem_btvn !== null) {
+                $stmt_score = $conn->prepare("
+                    INSERT INTO diem_thanh_phan (lop_id, so_bao_danh, ngay_kiem_tra, ten_cot_diem, diem_so, diem_btvn)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $stmt_score->execute([$lop_id, $sbd, $ngay_diem_danh, $test_title, $diem_test, $diem_btvn]);
             }
         }
+
+        $conn->commit();
+        // Quay lại trang xử lý với thông báo thành công
+        header("Location: handle_diemdanh.php?lop_id=$lop_id&ngay=$ngay_diem_danh&save=success");
+        exit();
+
+    } catch (PDOException $e) {
+        $conn->rollBack();
+        die("Lỗi: " . $e->getMessage());
     }
-
-    $conn->commit();
-    header("Location: $redirect_url&save=success");
-    exit;
-
-} catch (PDOException $e) {
-    $conn->rollBack();
-    die("Lỗi khi lưu dữ liệu: " . $e->getMessage());
 }
 ?>

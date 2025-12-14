@@ -9,10 +9,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $ngay_diem_danh = $_POST['ngay_diem_danh'];
     $lesson_title = $_POST['lesson_title'] ?? '';
     $lesson_description = $_POST['lesson_description'] ?? '';
+    
+    $test_title = $_POST['test_title'] ?? ''; 
+
 } elseif (isset($_GET['lop_id']) && isset($_GET['ngay'])) { 
     $lop_id = $_GET['lop_id'];
     $ngay_diem_danh = $_GET['ngay'];
     $lesson_title = $_GET['lesson_title'] ?? ''; 
+    $test_title = $_GET['test_title'] ?? ''; 
 } else {
     die("Thiếu thông tin lớp hoặc ngày.");
 }
@@ -23,9 +27,10 @@ $saved_statuses = [];
 $monthly_points = [];
 $saved_scores = []; 
 
-$current_title = $lesson_title;
+$current_lesson_title = $lesson_title;
+$current_test_title = $test_title;
 $current_desc = $lesson_description ?? "";
-$is_lop6 = false; // Biến kiểm tra lớp 6
+$is_lop6 = false; 
 
 require_once 'db_config.php';
 
@@ -36,12 +41,7 @@ try {
     $class_info = $stmt_class->fetch(PDO::FETCH_ASSOC);
 
     if (!$class_info) { die("Không tìm thấy lớp này."); }
-
-    // --- KIỂM TRA LỚP 6 ---
-    if (strpos($class_info['ten_lop'], '6-') === 0) {
-        $is_lop6 = true;
-    }
-    // ----------------------
+    if (strpos($class_info['ten_lop'], '6-') === 0) { $is_lop6 = true; }
 
     // Query 2: Lấy danh sách học sinh
     $stmt_students = $conn->prepare("
@@ -55,14 +55,26 @@ try {
     $stmt_students->execute([$lop_id]);
     $students_list = $stmt_students->fetchAll(PDO::FETCH_ASSOC);
 
-    // Query 3: Lấy thông tin bài học & điểm danh cũ
+    // Query 3: Lấy thông tin bài học & điểm danh cũ (Từ bảng diem_danh)
     $stmt_info = $conn->prepare("SELECT lesson_title, lesson_description FROM diem_danh WHERE lop_id = ? AND ngay_diem_danh = ? LIMIT 1");
     $stmt_info->execute([$lop_id, $ngay_diem_danh]);
     $info_row = $stmt_info->fetch(PDO::FETCH_ASSOC);
 
     if ($info_row) {
-        $current_title = $info_row['lesson_title']; 
+        $current_lesson_title = $info_row['lesson_title']; 
         $current_desc = $info_row['lesson_description'];
+    }
+
+    if (empty($current_test_title)) {
+        $stmt_find_test = $conn->prepare("SELECT DISTINCT ten_cot_diem FROM diem_thanh_phan WHERE lop_id = ? AND ngay_kiem_tra = ? LIMIT 1");
+        $stmt_find_test->execute([$lop_id, $ngay_diem_danh]);
+        $found_test = $stmt_find_test->fetchColumn();
+        
+        if ($found_test) {
+            $current_test_title = $found_test; 
+        } else {
+            $current_test_title = $current_lesson_title; 
+        }
     }
 
     $stmt_status = $conn->prepare("SELECT so_bao_danh, trang_thai FROM diem_danh WHERE lop_id = ? AND ngay_diem_danh = ?");
@@ -71,10 +83,10 @@ try {
         $saved_statuses[$s['so_bao_danh']] = $s['trang_thai'];
     }
 
-    // Query 4: Lấy điểm số cũ
-    if (!empty($current_title)) {
+    // Query 4: Lấy điểm số cũ 
+    if (!empty($current_test_title)) {
         $stmt_scores = $conn->prepare("SELECT so_bao_danh, diem_so, diem_btvn FROM diem_thanh_phan WHERE lop_id = ? AND ngay_kiem_tra = ? AND ten_cot_diem = ?");
-        $stmt_scores->execute([$lop_id, $ngay_diem_danh, $current_title]);
+        $stmt_scores->execute([$lop_id, $ngay_diem_danh, $current_test_title]);
         foreach ($stmt_scores->fetchAll(PDO::FETCH_ASSOC) as $sc) {
             $saved_scores[strtolower($sc['so_bao_danh'])] = [
                 'test' => $sc['diem_so'],
@@ -83,7 +95,7 @@ try {
         }
     }
 
-    // Query 5: Tính điểm chuyên cần tháng
+    // Query 5: Tính điểm chuyên cần
     $current_month = date('m', strtotime($ngay_diem_danh));
     $current_year = date('Y', strtotime($ngay_diem_danh));
     $sql_points = "
@@ -106,60 +118,26 @@ try {
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Điểm danh & Nhập điểm</title>
+    <title>Xử lý điểm danh</title>
     <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .form-input {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 10px; 
-            box-sizing: border-box;
-            
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background-color: rgba(255, 255, 255, 0.2); 
-            color: var(--text-color);
-            
-            font-size: 1em;
-            font-family: inherit;
-            
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            outline: none;
-            transition: all 0.3s ease;
+            width: 100%; padding: 12px 15px; margin-bottom: 10px; box-sizing: border-box;
+            border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.2); color: var(--text-color);
+            font-size: 1em; outline: none; transition: all 0.3s ease;
         }
-        .form-input:focus {
-            background-color: rgba(255, 255, 255, 0.4);
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
-        }
-        textarea.form-input {
-            min-height: 60px;
-            resize: vertical;
-        }
-
+        .form-input:focus { background-color: rgba(255, 255, 255, 0.4); border-color: var(--primary-color); }
+        
         .score-input-mini {
-            width: 80px !important;
-            padding: 8px 10px !important;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1em;
-            margin: 0 auto !important;
-            display: block;
-            
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            color: var(--text-color);
-            outline: none;
-            transition: all 0.3s ease;
+            width: 80px !important; padding: 8px 10px !important; text-align: center;
+            font-weight: bold; font-size: 1em; margin: 0 auto !important; display: block;
+            background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px; color: var(--text-color); outline: none;
         }
         .score-input-mini:focus {
-            background-color: rgba(255, 255, 255, 0.3);
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.2);
-            transform: scale(1.05);
+            background-color: rgba(255, 255, 255, 0.3); border-color: var(--primary-color); transform: scale(1.05);
         }
 
         th, td { vertical-align: middle; }
@@ -167,65 +145,25 @@ try {
         .points-cell { font-weight: 700; color: var(--primary-color); text-align: center; font-size: 1.1em; }
         
         .radio-group { display: flex; justify-content: center; gap: 15px; }
+        .radio-group input[type="radio"] { accent-color: var(--primary-color); }
         .radio-group input[type="radio"][value="late"]:checked + label { color: #fd7e14; font-weight: bold; }
-        [data-theme="dark"] .radio-group input[type="radio"][value="late"]:checked + label { color: #ffb74d; }
+        .radio-group input[type="radio"][value="absent"]:checked + label { color: red; font-weight: bold; }
 
         .btn-delete-session {
-            background: linear-gradient(145deg, #e74c3c, #c0392b);
-            color: white;
-            padding: 14px 20px;
-            font-size: 1.1em;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3);
-            transition: all 0.2s ease;
+            background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; padding: 14px 20px;
+            font-size: 1.1em; font-weight: 600; border: none; border-radius: 8px; cursor: pointer;
+            text-decoration: none; display: inline-block; text-align: center; margin-top: 0;
         }
-        .btn-delete-session:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(192, 57, 43, 0.4);
-        }
+        .action-buttons { display: flex; gap: 15px; margin-top: 20px; }
+        .action-buttons button, .action-buttons a { flex: 1; }
         
-        .action-buttons {
-            display: flex;
-            gap: 15px; 
-            margin-top: 20px;
+        .missing-data { background-color: rgba(231, 76, 60, 0.2) !important; border: 2px solid #e74c3c !important; }
+        #error-message-box {
+            display: none; background-color: #e74c3c; color: white; padding: 15px; border-radius: 8px;
+            margin-bottom: 20px; font-weight: bold; text-align: center; animation: shake 0.5s;
         }
-        .action-buttons button, .action-buttons a {
-            flex: 1; 
-        }
-        .missing-data {
-        background-color: rgba(231, 76, 60, 0.2) !important; 
-        border: 2px solid #e74c3c !important;
-        transition: all 0.3s ease;
-    }
-
-    #error-message-box {
-        display: none; 
-        background-color: #e74c3c;
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        font-weight: bold;
-        text-align: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        animation: shake 0.5s;
-    }
-
-    @keyframes shake {
-        0% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        50% { transform: translateX(5px); }
-        75% { transform: translateX(-5px); }
-        100% { transform: translateX(0); }
-    }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25%, 75% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
     </style>
-
 </head>
 <body class="admin-page-blue">
     
@@ -238,20 +176,16 @@ try {
             <a href="report_diemdanh.php"><button id="report-btn">Xem báo cáo</button></a>
             <a href="diemdanh.php"><button id="login-btn">Chọn lớp khác</button></a>
             <a href="admin.php"><button id="login-btn">Quay lại trang quản trị</button></a>
-            <a href="logout.php"><button id="login-btn">Đăng xuất</button></a>
         </div>
     </header>
 
     <main class="container" style="max-width: 1300px;">
-        <h2>Bảng điểm danh & Nhập điểm</h2>
+        <h2>Bảng điểm danh lớp và nhập điểm</h2>
         
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
             <div>
                 <h3>Lớp: <?php echo htmlspecialchars($class_info['ten_lop']); ?></h3>
                 <h3>Ngày: <?php echo date('d/m/Y', strtotime($ngay_diem_danh)); ?></h3>
-                <?php if (!empty($lesson_title)): ?>
-                    <h4 style="font-weight: normal; margin-top: 5px; color: var(--primary-color);">Bài học: <strong><?php echo htmlspecialchars($lesson_title); ?></strong></h4>
-                <?php endif; ?>
             </div>
             <div style="text-align: right; font-size: 0.9em; color: var(--text-color-light);">
                 Điểm chuyên cần tháng <?php echo date('m/Y', strtotime($ngay_diem_danh)); ?>
@@ -268,13 +202,25 @@ try {
             <input type="hidden" name="ngay_diem_danh" value="<?php echo htmlspecialchars($ngay_diem_danh); ?>">
 
             <div style="margin-bottom: 20px; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.3);">
-                <label style="font-weight: bold; font-size: 1.1em; margin-bottom: 8px; display: block;">Tiêu đề bài học:</label>
-                <input type="text" name="lesson_title" value="<?php echo htmlspecialchars($current_title); ?>" 
-                       class="form-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px;" required placeholder="Nhập tên bài học...">
                 
-                <label style="font-weight: bold; font-size: 1.1em; margin-bottom: 8px; display: block;">Mô tả bài học:</label>
-                <textarea name="lesson_description" rows="3" 
-                          class="form-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; resize: vertical;" placeholder="Nhập nội dung chi tiết..."><?php echo htmlspecialchars($current_desc); ?></textarea>
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; margin-bottom: 5px; display: block;">Tiêu đề bài học hôm nay:</label>
+                    <input type="text" name="lesson_title" value="<?php echo htmlspecialchars($current_lesson_title); ?>" 
+                           class="form-input" style="background: rgba(0,0,0,0.05);" readonly>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; display: block">
+                        <i class="fas fa-edit"></i> Tên bài Test:
+                    </label>
+                    <input type="text" name="test_title" value="<?php echo htmlspecialchars($current_test_title); ?>" 
+                           class="form-input" required>
+                </div>
+
+                <div>
+                    <label style="font-weight: bold; margin-bottom: 5px; display: block;">Mô tả chi tiết bài học:</label>
+                    <textarea name="lesson_description" rows="2" class="form-input"><?php echo htmlspecialchars($current_desc); ?></textarea>
+                </div>
             </div>
 
             <table>
@@ -283,11 +229,13 @@ try {
                         <th style="width: 40px;">STT</th>
                         <th style="width: 80px;">SBD</th>
                         <th style="text-align: left;">Họ và tên</th>
-                        <th style="width: 80px;">Chuyên Cần (Tổng tháng)</th>
+                        <th style="width: 80px;">Chuyên Cần</th>
                         <th>Trạng thái đi học</th>
                         
                         <?php if (!$is_lop6): ?>
-                            <th style="width: 100px;">Điểm Test</th>
+                            <th style="width: 120px;">
+                                Điểm Test<br>
+                            </th>
                         <?php endif; ?>
 
                         <th style="width: 100px;">Điểm BTVN</th>
@@ -307,15 +255,14 @@ try {
                                     $score_test = $saved_scores[$sbd_key]['test'];
                                     $score_btvn = $saved_scores[$sbd_key]['btvn'];
                                 } else {
-                                    $score_test = 5;
-                                    $score_btvn = 10;
+                                    $score_test = ''; // Để trống nếu chưa có điểm
+                                    $score_btvn = 10; // Mặc định BTVN là 10
                                 }
                             ?>
                             <tr>
                                 <td style="text-align: center;"><?php echo $index + 1; ?></td>
                                 <td><?php echo htmlspecialchars($student['so_bao_danh']); ?></td>
                                 <td><?php echo htmlspecialchars($student['ho_ten']); ?></td>
-                                
                                 <td class="points-cell"><?php echo $points; ?></td>
 
                                 <td>
@@ -349,10 +296,10 @@ try {
                 <div class="action-buttons">
                     <button type="submit" class="submit-btn" style="margin-top: 0;">Lưu tất cả</button>
 
-            <?php if (!empty($current_title) || !empty($saved_statuses)): ?>
+            <?php if (!empty($current_lesson_title) || !empty($saved_statuses)): ?>
                         <a href="handle_delete_diemdanh.php?lop_id=<?php echo $lop_id; ?>&ngay=<?php echo $ngay_diem_danh; ?>" 
                            class="btn-delete-session"
-                           onclick="return confirm('CẢNH BÁO: Hành động này sẽ xóa toàn bộ điểm danh và điểm số của ngày <?php echo $ngay_diem_danh; ?>. Bạn có chắc chắn không?');">
+                           onclick="return confirm('CẢNH BÁO: Xóa điểm danh và điểm số ngày này?');">
                            Xóa điểm danh
                         </a>
             <?php endif; ?>
@@ -360,10 +307,10 @@ try {
             <?php endif; ?>
         </form>
     </main>
+    
     <script src="admin_main.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            
             const form = document.querySelector('form[action="save_diemdanh.php"]');
             const errorBox = document.createElement('div');
             errorBox.id = 'error-message-box';
@@ -371,12 +318,10 @@ try {
             
             if (form) {
                 form.parentNode.insertBefore(errorBox, form);
-                
                 form.addEventListener('submit', function(e) {
                     let isValid = true;
                     let firstMissing = null;
                     const rows = document.querySelectorAll('tbody tr');
-
                     rows.forEach(row => row.classList.remove('missing-data'));
                     errorBox.style.display = 'none';
 
@@ -385,10 +330,8 @@ try {
                         if (radios.length > 0) {
                             let isChecked = false;
                             radios.forEach(r => { if (r.checked) isChecked = true; });
-
                             if (!isChecked) {
-                                isValid = false;
-                                row.classList.add('missing-data');
+                                isValid = false; row.classList.add('missing-data');
                                 if (!firstMissing) firstMissing = row;
                             }
                         }
@@ -398,42 +341,28 @@ try {
                         e.preventDefault();
                         errorBox.style.display = 'block';
                         firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        alert("Bạn chưa điền đủ thông tin điểm danh!");
+                        alert("Chưa điền đủ thông tin điểm danh!");
                     }
                 });
             }
 
+            // Logic phím mũi tên (Excel style)
             const scoreInputs = Array.from(document.querySelectorAll('.score-input-mini'));
-            
             if (scoreInputs.length > 0) {
-                const firstInput = scoreInputs[0];
-                const firstRow = firstInput.closest('tr');
+                const firstRow = scoreInputs[0].closest('tr');
                 const inputsPerRow = firstRow.querySelectorAll('.score-input-mini').length; 
                 
                 scoreInputs.forEach((input, index) => {
                     input.addEventListener('keydown', function(e) {
-                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
                             e.preventDefault(); 
-
                             let nextIndex;
-                            if (e.key === 'ArrowUp') {
-                                nextIndex = index - inputsPerRow; 
-                            } else {
-                                nextIndex = index + inputsPerRow;
-                            }
+                            if (e.key === 'ArrowUp') nextIndex = index - inputsPerRow; 
+                            else nextIndex = index + inputsPerRow;
 
                             if (scoreInputs[nextIndex]) {
                                 scoreInputs[nextIndex].focus();
                                 scoreInputs[nextIndex].select(); 
-                            }
-                        }
-                        
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const nextIndex = index + inputsPerRow;
-                            if (scoreInputs[nextIndex]) {
-                                scoreInputs[nextIndex].focus();
-                                scoreInputs[nextIndex].select();
                             }
                         }
                     });
