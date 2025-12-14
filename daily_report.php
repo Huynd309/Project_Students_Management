@@ -308,14 +308,14 @@ function getTrangThaiText($status) {
                             <th style="width: 80px;">Trạng thái</th>
                             
                             <?php if (!$is_lop8): ?>
-                                <th style="width: 50px;">CC</th>
+                                <th style="width: 50px;">Điểm Chuyên Cần</th>
                             <?php endif; ?>
                             
                             <?php if (!$is_lop6): ?>
-                                <th style="width: 50px;">Test</th>
+                                <th style="width: 50px;">Điểm bài Test</th>
                             <?php endif; ?>
 
-                            <th style="width: 50px;">BTVN</th>
+                            <th style="width: 50px;">Điểm BTVN</th>
 
                             <?php if (!$is_lop8): ?>
                                 <th style="width: 80px; background-color: rgba(0, 123, 255, 0.1);">Tích Lũy</th>
