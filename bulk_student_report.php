@@ -37,24 +37,35 @@ try {
     foreach ($student_list as $std) {
         $sbd = $std['so_bao_danh'];
         
-        // A. Lấy dữ liệu Điểm danh & Tính điểm TB Chuyên cần (CC)
+        // --- PHẦN A MỚI: LẤY CHI TIẾT ĐIỂM DANH TỪNG NGÀY ---
         $attendance_stats = ['present' => 0, 'late' => 0, 'absent' => 0];
+        $daily_cc_scores = []; // Mảng lưu điểm chuyên cần theo ngày: '2025-12-02' => 7
+
         $stmt_att = $conn->prepare("
-            SELECT trang_thai, COUNT(*) as cnt FROM diem_danh 
-            WHERE so_bao_danh = ? AND lop_id = ? AND EXTRACT(MONTH FROM ngay_diem_danh) = ? AND EXTRACT(YEAR FROM ngay_diem_danh) = ?
-            GROUP BY trang_thai
+            SELECT ngay_diem_danh, trang_thai 
+            FROM diem_danh 
+            WHERE so_bao_danh = ? AND lop_id = ? 
+            AND EXTRACT(MONTH FROM ngay_diem_danh) = ? AND EXTRACT(YEAR FROM ngay_diem_danh) = ?
         ");
         $stmt_att->execute([$sbd, $lop_id, $month, $year]);
-        while($row = $stmt_att->fetch(PDO::FETCH_ASSOC)) {
-            $attendance_stats[$row['trang_thai']] = $row['cnt'];
-        }
-
-        // Tính điểm TB Chuyên cần (Thang 10)
-        $total_sessions = $attendance_stats['present'] + $attendance_stats['late'] + $attendance_stats['absent'];
-        $total_cc_score = ($attendance_stats['present'] * 10) + ($attendance_stats['late'] * 7) + ($attendance_stats['absent'] * 0);
         
-        // Nếu chưa học buổi nào thì mặc định 10, ngược lại tính trung bình
-        $avg_cc_score = ($total_sessions > 0) ? ($total_cc_score / $total_sessions) : 10;
+        while($row = $stmt_att->fetch(PDO::FETCH_ASSOC)) {
+            $status = mb_strtolower($row['trang_thai'], 'UTF-8'); // Chuyển về chữ thường để so sánh
+            $date_key = $row['ngay_diem_danh'];
+            
+            // 1. Cộng tổng để hiển thị thống kê
+            if (strpos($status, 'vắng') !== false || $status == 'absent') {
+                $attendance_stats['absent']++;
+                $daily_cc_scores[$date_key] = 0; // Vắng = 0 điểm
+            } elseif (strpos($status, 'muộn') !== false || $status == 'late') {
+                $attendance_stats['late']++;
+                $daily_cc_scores[$date_key] = 7; // Muộn = 7 điểm
+            } else {
+                // Mặc định là có mặt (present / có mặt)
+                $attendance_stats['present']++;
+                $daily_cc_scores[$date_key] = 10; // Có mặt = 10 điểm
+            }
+        }
 
 
         // B. Lấy dữ liệu Điểm số
@@ -77,7 +88,7 @@ try {
             'info' => $std,
             'scores' => $scores,
             'attendance' => $attendance_stats,
-            'avg_cc' => $avg_cc_score, 
+            'daily_cc' => $daily_cc_scores, // Truyền mảng điểm danh chi tiết xuống view
             'comment' => $comment
         ];
     }
@@ -105,7 +116,7 @@ try {
             margin-bottom: 20px;
             page-break-after: always;
             position: relative;
-            height: 296mm; /* Khổ A4 cố định */
+            height: 296mm;
             max-height: 296mm;
             box-sizing: border-box;
             overflow: hidden; 
@@ -124,14 +135,13 @@ try {
         .info-card h4 { margin: 0 0 5px 0; font-size: 12pt; }
         
         .chart-container { 
-            height: 220px; /* Chart nhỏ gọn */
+            height: 220px;
             margin-bottom: 15px; 
             border: 1px solid #eee; padding: 5px; background: #fff;
         }
 
         h4.section-title { margin: 10px 0 5px 0; font-size: 12pt; border-bottom: 1px dashed #ccc; padding-bottom: 3px; }
 
-        /* Bảng điểm gọn */
         table { font-size: 10pt; width: 100%; border-collapse: collapse; }
         th, td { padding: 4px 6px; border: 1px solid #000; text-align: center; }
 
@@ -169,8 +179,8 @@ try {
             $sbd = $data['info']['so_bao_danh'];
             $chart_id = "chart_" . $sbd;
             
-            // Lấy điểm TB CC đã tính ở trên
-            $avg_cc = $data['avg_cc']; 
+            // Lấy danh sách điểm CC theo ngày của học sinh này
+            $daily_cc_map = $data['daily_cc']; 
         ?>
             
             <div class="single-report-page">
@@ -229,17 +239,19 @@ try {
                                     if ($s['diem_so'] !== null) {
                                         $labels[] = date('d/m', strtotime($s['ngay_kiem_tra']));
                                         
-                                        // --- TÍNH ĐIỂM TÍCH LŨY ---
+                                        // --- TÍNH ĐIỂM TÍCH LŨY CHÍNH XÁC TỪNG NGÀY ---
                                         $diem_test = (float)$s['diem_so'];
                                         $diem_btvn = ($s['diem_btvn'] !== null) ? (float)$s['diem_btvn'] : 0;
-                                        
-                                        // Công thức: (Test*2 + CC + BTVN) / 4
-                                        // Lưu ý: $avg_cc là điểm chuyên cần trung bình của cả tháng
-                                        $tich_luy = ($diem_test * 2 + $avg_cc + $diem_btvn) / 4;
+                                        $ngay_kt = $s['ngay_kiem_tra']; // Ví dụ: 2025-12-02
+
+                                        // 1. Tìm điểm chuyên cần CỦA NGÀY HÔM ĐÓ
+                                        $cc_ngay_do = isset($daily_cc_map[$ngay_kt]) ? $daily_cc_map[$ngay_kt] : 10;
+
+                                        // 2. Áp dụng công thức
+                                        $tich_luy = ($diem_test * 2 + $cc_ngay_do + $diem_btvn) / 4;
                                         
                                         $scores_tichluy[] = round($tich_luy, 2);
-                                        $scores_lop[] = (float)$s['diem_tb_lop']; // Vẫn giữ TB lớp là điểm Test để tham chiếu
-                                    }
+                                        $scores_lop[] = (float)$s['diem_tb_lop']; 
                             ?>
                                 <tr>
                                     <td><?php echo date('d/m', strtotime($s['ngay_kiem_tra'])); ?></td>
@@ -249,10 +261,14 @@ try {
                                     <td><?php echo $s['diem_btvn'] ?? '-'; ?></td>
                                     
                                     <td style="font-weight:bold; color: #e74c3c;">
-                                        <?php echo isset($tich_luy) ? number_format($tich_luy, 2) : '-'; ?>
+                                        <?php echo number_format($tich_luy, 2); ?>
                                     </td>
                                 </tr>
-                            <?php endforeach; endif; ?>
+                            <?php 
+                                    } 
+                                endforeach; 
+                            endif; 
+                            ?>
                         </tbody>
                     </table>
                 </div>
