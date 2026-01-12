@@ -157,7 +157,7 @@ if (isset($_GET['sbd_tra_cuu'])) {
             
             <div class="nav-links">
                 <a href="#">Tiền tiểu học & Tiểu học</a>
-                <a href="#">Luyện thi (6-12)</a>
+                <a href="luyenthi.php">Luyện thi (6-12)</a>
                 <a href="#">Nhất Đạo Gia sư</a>
                 <a href="#">Nhất Đạo BookStore</a>
             </div>
