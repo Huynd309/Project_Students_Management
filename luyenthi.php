@@ -11,7 +11,6 @@ session_start();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        /* --- 1. CẤU HÌNH CHUNG (GIỐNG INDEX.PHP) --- */
         :root {
             --primary-color: #007bff;
             --secondary-color: #f8f9fa;
@@ -22,7 +21,6 @@ session_start();
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; line-height: 1.6; color: var(--text-color); background: #f9f9f9; }
         * { box-sizing: border-box; }
 
-        /* --- 2. HEADER / NAVBAR --- */
         header { background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
         .navbar { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 15px 20px; }
         .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary-color); text-decoration: none; display: flex; align-items: center; gap: 10px; }
@@ -37,7 +35,6 @@ session_start();
         .btn-admin { background: var(--primary-color); color: white; }
         .btn-logout { background: #dc3545; color: white; }
 
-        /* --- 3. BANNER RIÊNG CHO TRANG LUYỆN THI --- */
         .page-banner {
             background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80');
             background-size: cover;
@@ -53,7 +50,6 @@ session_start();
         .page-banner h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         .page-banner p { font-size: 1.2rem; opacity: 0.9; max-width: 700px; }
 
-        /* --- 4. NỘI DUNG GIỚI THIỆU TRUNG TÂM --- */
         .intro-section { padding: 60px 20px; max-width: 1000px; margin: 0 auto; text-align: center; }
         .intro-section h2 { color: var(--primary-color); margin-bottom: 20px; font-size: 2rem; }
         .intro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; text-align: left; }
@@ -61,7 +57,6 @@ session_start();
         .intro-card i { color: var(--primary-color); font-size: 2rem; margin-bottom: 15px; }
         .intro-card h3 { margin-bottom: 10px; }
 
-        /* --- 5. DANH SÁCH GIÁO VIÊN (GRID LAYOUT) --- */
         .teacher-section { background: #fff; padding: 80px 20px; }
         .section-container { max-width: 1200px; margin: 0 auto; }
         .section-title { text-align: center; margin-bottom: 60px; }
@@ -74,7 +69,6 @@ session_start();
             gap: 40px; 
         }
 
-        /* Card giáo viên */
         .teacher-card { 
             background: white; 
             border-radius: 12px; 
@@ -126,7 +120,7 @@ session_start();
             </a>
             
             <div class="nav-links">
-                <a href="#">Tiền tiểu học & Tiểu học</a>
+                <a href="tientieuhoc.php">Tiền tiểu học & Tiểu học</a>
                 <a href="luyenthi.php" class="active">Luyện thi (6-12)</a> 
                 <a href="#">Nhất Đạo Gia sư</a>
                 <a href="#">Nhất Đạo BookStore</a>
