@@ -177,22 +177,23 @@ session_start();
                 
                 <div class="teacher-card">
                     <div class="teacher-img">
-                        <img src="#" alt="GV 1">
+                        <img src="imgThai.png" alt="GV 1">
                     </div>
                     <div class="teacher-info">
                         <div class="teacher-name">Cô Nguyễn Thị Hồng Thái</div>
-                        <div class="teacher-subject">Môn Toán</div>
-                        <div class="teacher-bio">Với 2 năm kinh nghiệm luyện thi vào 10. Phong cách giảng dạy nghiêm khắc nhưng dễ hiểu.</div>
+                        <div class="teacher-subject">Môn Toán Cấp 2</div>
+                        <div class="teacher-bio">Với 3 năm kinh nghiệm luyện thi vào 10. Phong cách giảng dạy nghiêm khắc nhưng dễ hiểu.</div>
                         <ul class="achievements">
-                            <li><i class="fas fa-star"></i> Thạc sĩ Toán học ĐH Sư Phạm HN</li>
-                            <li><i class="fas fa-star"></i> Đào tạo 50+ học sinh điểm 10 Toán vào 10 sở Hà Nội</li>
+                            <li><i class="fas fa-star"></i> Tốt nghiệp xuất sắc ngành Toán Học- ĐH Sư Phạm HN 2</li>
+                            <li><i class="fas fa-star"></i> Thạc sĩ Toán Giải Tích ĐH Sư Phạm HN</li>
+                            <li><i class="fas fa-star"></i> Giải nhất kì thi "Olympic Toán sinh viên" cấp trường năm học 2024-2025</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="teacher-card">
                     <div class="teacher-img">
-                        <img src="#" alt="GV 2">
+                        <img src="imgHoan.png" alt="GV 2">
                     </div>
                     <div class="teacher-info">
                         <div class="teacher-name">Thầy Trương Việt Hoàn</div>
@@ -200,37 +201,41 @@ session_start();
                         <div class="teacher-bio">Chuyên gia gỡ rối các bài tập Lý khó. Phương pháp "Sơ đồ tư duy" giúp học sinh nhớ công thức siêu tốc.</div>
                         <ul class="achievements">
                             <li><i class="fas fa-star"></i> Cử nhân Đại Học Bách Khoa Hà Nội</li>
-                            <li><i class="fas fa-star"></i> Tác giả nhiều bài báo khoa học</li>
+                            <li><i class="fas fa-star"></i> Nghiên cứu sinh chuyên ngành Vật Lí lượng tử</li>
+                            <li><i class="fas fa-star"></i> Tác giả nhiều bài báo khoa học trong nước và quốc tế</li>
+                            <li><i class="fas fa-star"></i> Được NASA mời về nghiên cứu chế tạo tên lửa đạn đạo xuyên lục địa trong 2 năm</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="teacher-card">
                     <div class="teacher-img">
-                        <img src="#" alt="GV 3">
+                        <img src="imgDao.png" alt="GV 3">
                     </div>
                     <div class="teacher-info">
-                        <div class="teacher-name">Thầy Ngô Dương Huy</div>
-                        <div class="teacher-subject">Môn Tiếng Anh / IELTS</div>
-                        <div class="teacher-bio">Giúp học sinh mất gốc lấy lại căn bản chỉ sau 3 tháng. Luyện thi IELTS cam kết đầu ra 6.5+.</div>
+                        <div class="teacher-name">Thầy Ngô Duy Nhất Đạo</div>
+                        <div class="teacher-subject">Môn Toán Cấp 3</div>
+                        <div class="teacher-bio">Giúp học sinh mất gốc lấy lại căn bản chỉ sau 3 tháng. Luyện thi cam kết đầu ra 8+.</div>
                         <ul class="achievements">
-                            <li><i class="fas fa-star"></i> IELTS 8.0 Overall</li>
-                            <li><i class="fas fa-star"></i> Cựu học sinh THPT chuyên Lê Hồng Phong- Nam Định</li>
+                            <li><i class="fas fa-star"></i> Tốt nghiệp Đại Học Bách Khoa Hà Nội</li>
+                            <li><i class="fas fa-star"></i> Thủ khoa lớp A1 trường THPT Cổ Loa năm 2011</li>
+                            <li><i class="fas fa-star"></i> Có 10 năm kinh nghiệm luyện thi vào 10 sở Hà Nội</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="teacher-card">
                     <div class="teacher-img">
-                        <img src="#" alt="GV 4">
+                        <img src="imgManh.png" alt="GV 4">
                     </div>
                     <div class="teacher-info">
-                        <div class="teacher-name">Thầy Cao Văn Dương</div>
-                        <div class="teacher-subject">Môn Hóa Học</div>
-                        <div class="teacher-bio">Biến Hóa học khô khan thành những thí nghiệm thú vị. Chuyên luyện thi Đại học khối A, B.</div>
+                        <div class="teacher-name">Anh Chu Đức Mạnh</div>
+                        <div class="teacher-subject">Trợ Giảng môn Toán</div>
+                        <div class="teacher-bio">Biến những công thức toán học khô khan thành những kiến thức thú vị.</div>
                         <ul class="achievements">
-                            <li><i class="fas fa-star"></i> Thủ khoa Đại Học Y Hà Nội</li>
-                            <li><i class="fas fa-star"></i> Kinh nghiệm 18 năm luyện thi đại học</li>
+                            <li><i class="fas fa-star"></i> Sinh viên học viện Bưu Chính Viễn Thông</li>
+                            <li><i class="fas fa-star"></i> Giải nhất cuộc thi Hackrathon 2 lần liên tiếp</li>
+                            <li><i class="fas fa-star"></i> Nằm trong Top 10 đội đứng đầu ICCP Asia</li>
                         </ul>
                     </div>
                 </div>
