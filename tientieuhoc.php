@@ -147,11 +147,10 @@ session_start();
                 <i class="fas fa-graduation-cap fa-lg"></i> TRUNG TÂM NHẤT ĐẠO EDU
             </a>
             <div class="nav-links">
-                <a href="index.php">Trang chủ</a>
                 <a href="tientieuhoc.php" class="active">Tiền tiểu học & Tiểu học</a>
                 <a href="luyenthi.php">Luyện thi (6-12)</a>
-                <a href="#">Gia sư</a>
-                <a href="#">BookStore</a>
+                <a href="#">Nhất Đạo Gia sư</a>
+                <a href="#">Nhất Đạo BookStore</a>
             </div>
             <div class="auth-box">
                 <?php if (isset($_SESSION['username'])): ?>

@@ -22,7 +22,7 @@ session_start();
         * { box-sizing: border-box; }
 
         header { background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 15px 20px; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 10px 15px; }
         .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary-color); text-decoration: none; display: flex; align-items: center; gap: 10px; }
         
         .nav-links { display: flex; align-items: center; }
@@ -85,14 +85,14 @@ session_start();
         .teacher-img img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
         .teacher-card:hover .teacher-img img { transform: scale(1.05); }
 
-        .teacher-info { padding: 25px; text-align: center; flex: 1; display: flex; flex-direction: column; }
+        .teacher-info { padding: 25px; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
         .teacher-name { font-size: 1.3rem; font-weight: bold; color: #222; margin-bottom: 5px; }
         .teacher-subject { color: var(--primary-color); font-weight: bold; font-size: 0.9rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
-        .teacher-bio { font-size: 0.95rem; color: #666; margin-bottom: 20px; flex: 1; }
+        .teacher-bio { font-size: 0.95rem; color: #666; margin-bottom: 20px; flex: 0 0 auto; }
         
         .achievements { list-style: none; padding: 0; text-align: left; font-size: 0.9rem; color: #555; background: #f8f9fa; padding: 15px; border-radius: 6px; }
         .achievements li { margin-bottom: 5px; display: flex; align-items: start; }
-        .achievements i { color: #28a745; margin-right: 8px; margin-top: 4px; }
+        .achievements i { color: #28a745; margin-right: 8px; margin-top: 4px; flex-shrink: 0; }
 
         /* --- 6. FOOTER --- */
         footer { background: var(--footer-bg); color: #ccc; padding: 60px 20px 20px; font-size: 0.95rem; }
@@ -109,6 +109,98 @@ session_start();
             .page-banner { height: 250px; }
             .page-banner h1 { font-size: 1.8rem; }
         }
+
+
+        .dropdown {
+         position: relative;
+        display: flex;
+        align-items: center;
+        height: 100%;
+        }
+
+        .dropdown::after {
+        content: "";
+        position: absolute;
+        bottom: -20px; 
+        left: 0;
+        width: 100%;
+        height: 30px; 
+        background: transparent; 
+        z-index: 100;
+    }
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    min-width: 240px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    z-index: 9999;
+    
+    top: 100%; 
+    left: 0;
+    
+    margin-top: 15px; 
+    
+    border-radius: 8px;
+    padding: 10px 0;
+    border-top: 3px solid var(--primary-color);
+}
+
+    .dropdown-content::before {
+    content: "";
+    position: absolute;
+    top: -16px; 
+    left: 30px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent transparent var(--primary-color) transparent;
+    }
+
+    .dropdown:hover .dropdown-content {
+    display: block;
+    animation: slideUp 0.3s ease;
+    }
+
+    .dropdown-content a {
+    color: #333;
+    padding: 12px 20px;
+    text-decoration: none;
+    display: block;
+    margin-left: 0 !important;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    text-align: left;
+    border-bottom: 1px dashed #eee;
+    }
+
+    .dropdown-content a:last-child {
+    border-bottom: none;
+    }
+
+    .dropdown-content a:hover {
+    background-color: #f0f7ff;
+    color: var(--primary-color);
+    padding-left: 25px;
+    }
+
+    .dropdown-content i {
+    width: 25px;
+    color: var(--primary-color);
+    text-align: center;
+    }
+
+    @keyframes slideUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+    .dropdown { display: block; width: 100%; }
+    .dropdown::after { display: none; } 
+    .dropdown-content { position: static; box-shadow: none; border-top: none; width: 100%; padding-left: 20px; margin-top: 0; }
+    .dropdown-content::before { display: none; }
+    }
     </style>
 </head>
 <body>
@@ -121,7 +213,18 @@ session_start();
             
             <div class="nav-links">
                 <a href="tientieuhoc.php">Tiền tiểu học & Tiểu học</a>
-                <a href="luyenthi.php" class="active">Luyện thi (6-12)</a> 
+                
+                <div class="dropdown">
+                    <a href="#" class="active">Luyện thi (6-12) <i class="fas fa-caret-down"></i></a>
+                    
+                    <div class="dropdown-content">
+                        <a href="luyenthi.php"><i class="fas fa-map-marker-alt"></i> Cơ sở 1: Lại Đà</a>
+                        
+                        <a href="luyenthi_cs2.php"><i class="fas fa-map-marker-alt"></i> Cơ sở 2: Thôn Hương</a>
+                        <a href="luyenthi_cs3.php"><i class="fas fa-map-marker-alt"></i> Cơ sở 3: Mai Hiên</a>
+                        <a href="#"><i class="fas fa-clock"></i> Cơ sở 4</a>
+                    </div>
+                </div>
                 <a href="#">Nhất Đạo Gia sư</a>
                 <a href="#">Nhất Đạo BookStore</a>
             </div>
@@ -186,7 +289,9 @@ session_start();
                         <ul class="achievements">
                             <li><i class="fas fa-star"></i> Tốt nghiệp xuất sắc ngành Toán Học- ĐH Sư Phạm HN 2</li>
                             <li><i class="fas fa-star"></i> Thạc sĩ Toán Giải Tích ĐH Sư Phạm HN</li>
-                            <li><i class="fas fa-star"></i> Giải nhất kì thi "Olympic Toán sinh viên" cấp trường năm học 2024-2025</li>
+                            <li><i class="fas fa-star"></i> Giải nhất kì thi "Olympic Toán sinh viên" cấp trường 2 năm liên tiếp năm học 2023-2024 và 2024-2025</li>
+                            <li><i class="fas fa-star"></i> 6/8 kì đạt học bổng học tập loại Giỏi, Xuất Sắc</li>
+
                         </ul>
                     </div>
                 </div>
@@ -226,16 +331,21 @@ session_start();
 
                 <div class="teacher-card">
                     <div class="teacher-img">
-                        <img src="imgManh.png" alt="GV 4">
+                        <img src="#" alt="GV 4">
                     </div>
                     <div class="teacher-info">
-                        <div class="teacher-name">Anh Chu Đức Mạnh</div>
-                        <div class="teacher-subject">Trợ Giảng môn Toán</div>
-                        <div class="teacher-bio">Biến những công thức toán học khô khan thành những kiến thức thú vị.</div>
+                        <div class="teacher-name">Cô Đinh Thị Hải Yến</div>
+                        <div class="teacher-subject">Môn Tiếng Anh </div>
+                        <div class="teacher-bio">Khơi dậy niềm đam mê ngôn ngữ và khám phá thế giới qua tiếng Anh.</div>
                         <ul class="achievements">
-                            <li><i class="fas fa-star"></i> Sinh viên học viện Bưu Chính Viễn Thông</li>
-                            <li><i class="fas fa-star"></i> Giải nhất cuộc thi Hackrathon 2 lần liên tiếp</li>
-                            <li><i class="fas fa-star"></i> Nằm trong Top 10 đội đứng đầu ICCP Asia</li>
+                            <li><i class="fas fa-star"></i> Giảng dạy và đào tạo cho sinh viên trường Đại học Thương Mại</li>
+                            <li><i class="fas fa-star"></i> Tham gia tổ chức tập huấn thi chứng chỉ IELTS tại Odin Language</li>
+                            <li><i class="fas fa-star"></i> Chứng chỉ ngoại ngữ trình độ C1</li>
+                            <li><i class="fas fa-star"></i> Tốt nghiệp loại giỏi khoa Tiếng Anh trường ĐH Sư Phạm HN</li>
+                            <li><i class="fas fa-star"></i> Thạc sĩ LL & PP giảng dạy Tiếng Anh trường ĐH Sư Phạm HN</li>
+                            <li><i class="fas fa-star"></i> Kinh nghiệm ôn thi vào 10, giảng dạy các khối THCS, THPT</li>
+                            <li><i class="fas fa-star"></i> Chứng chỉ tin học cơ bản, sử dụng CNTT trong giảng dạy</li>
+                            
                         </ul>
                     </div>
                 </div>
