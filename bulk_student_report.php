@@ -114,12 +114,14 @@ try {
             background: white;
             padding: 30px 40px; 
             margin-bottom: 20px;
-            page-break-after: always;
             position: relative;
-            height: 296mm;
-            max-height: 296mm;
             box-sizing: border-box;
-            overflow: hidden; 
+
+            /* 1. ĐÃ BẺ KHÓA: Cho phép chiều cao tự do, ngắt trang tự động sau mỗi học sinh */
+            height: auto;
+            max-height: none;
+            overflow: visible; 
+            page-break-after: always;
         }
 
         .report-header-print {
@@ -142,7 +144,9 @@ try {
 
         h4.section-title { margin: 10px 0 5px 0; font-size: 12pt; border-bottom: 1px dashed #ccc; padding-bottom: 3px; }
 
-        table { font-size: 10pt; width: 100%; border-collapse: collapse; }
+        /* 2. ÉP BẢNG CHO PHÉP ĐỨT GÃY SANG TRANG 2 */
+        table { font-size: 10pt; width: 100%; border-collapse: collapse; page-break-inside: auto; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
         th, td { padding: 4px 6px; border: 1px solid #000; text-align: center; }
 
         .teacher-comment-section {
@@ -152,23 +156,70 @@ try {
             border-radius: 8px;
             font-size: 12pt;
             line-height: 1.4;
-            max-height: 150px; 
-            overflow: hidden;
+            
+            /* 3. ĐÃ BẺ KHÓA: Tránh việc nhận xét dài quá bị mất chữ */
+            height: auto; 
+            max-height: none; 
+            overflow: visible;
         }
         
         @media print {
-            body { background: white; }
+            /* 1. Xóa bỏ mọi bùa chú giới hạn chiều cao toàn trang */
+            html, body { 
+                background: white !important; margin: 0 !important; padding: 0 !important; 
+                height: auto !important; max-height: none !important; overflow: visible !important;
+                display: block !important;
+            }
             .no-print-bulk { display: none !important; }
-            .bulk-container { width: 100%; margin: 0; }
-            .single-report-page { margin: 0; border: none; padding: 20px 30px !important; height: 100vh !important; }
-            .chart-container { page-break-inside: avoid; }
+            
+            .bulk-container { 
+                width: 100% !important; margin: 0 !important; 
+                display: block !important; height: auto !important; overflow: visible !important;
+            }
+            
+            /* 2. CHÌA KHÓA VÀNG: Mở khóa khung của từng học sinh */
+            .single-report-page { 
+                margin: 0 !important; border: none !important; padding: 20px 30px !important; 
+                height: auto !important; max-height: none !important; overflow: visible !important; 
+                display: block !important; 
+                position: static !important; /* Gỡ bỏ position: relative gây lỗi cắt trang */
+                page-break-inside: auto !important; /* Cho phép 1 học sinh dài 2-3 trang giấy */
+                page-break-after: always !important; /* Hết 1 học sinh mới sang người tiếp theo */
+            }
+
+            /* 3. Đảm bảo thẻ div bọc bảng không bị khóa */
+            .single-report-page > div {
+                display: block !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                page-break-inside: auto !important;
+            }
+
+            /* 4. Khôi phục ma trận Bảng để không bị tàng hình */
+            table { 
+                display: table !important; 
+                width: 100% !important; 
+                page-break-inside: auto !important; 
+                overflow: visible !important;
+            }
+            thead { display: table-header-group !important; }
+            tbody { display: table-row-group !important; }
+            tr { page-break-inside: avoid !important; page-break-after: auto !important; display: table-row !important;}
+            th, td { display: table-cell !important; }
+
+            /* 5. Chống đứt đôi biểu đồ và nhận xét */
+            .chart-container, .report-grid, .info-card, .teacher-comment-section { 
+                page-break-inside: avoid !important; 
+                display: block !important;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="no-print-bulk" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-        <button onclick="window.print()" class="btn-print" style="box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+        <button onclick="inHangLoat()" type="button" class="btn-print" style="box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
             <i class="fas fa-print"></i> In Tất Cả
         </button>
     </div>
@@ -226,7 +277,8 @@ try {
                                 <th>Điểm HS</th>
                                 <th>TB Lớp</th>
                                 <th>BTVN</th>
-                                <th>Điểm Tích Lũy</th> </tr>
+                                <th>Điểm Tích Lũy</th>
+                            </tr>
                         </thead>
                         <tbody>
                             <?php 
@@ -317,5 +369,89 @@ try {
 
         <?php endforeach; ?>
     </div>
+    <script>
+        function inHangLoat() {
+            // 1. Copy toàn bộ nội dung khối chứa tất cả học sinh
+            var containerClone = document.querySelector('.bulk-container').cloneNode(true);
+
+            // 2. XỬ LÝ BIỂU ĐỒ: Vì canvas không thể copy bằng HTML, ta phải "chụp ảnh" nó
+            var originalCanvases = document.querySelectorAll('.bulk-container canvas');
+            var clonedCanvases = containerClone.querySelectorAll('canvas');
+
+            for (var i = 0; i < originalCanvases.length; i++) {
+                var img = document.createElement('img');
+                // Chuyển biểu đồ thành ảnh thật
+                img.src = originalCanvases[i].toDataURL("image/png"); 
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                // Thay thế thẻ canvas bằng thẻ ảnh
+                clonedCanvases[i].parentNode.replaceChild(img, clonedCanvases[i]);
+            }
+
+            var htmlContent = containerClone.innerHTML;
+
+            // 3. TẠO THẾ GIỚI ẢO (IFRAME) ĐỂ CÁCH LY LỖI
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            var doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(`
+                <html>
+                <head>
+                    <title>In Báo Cáo Hàng Loạt</title>
+                    <style>
+                        body { font-family: 'Arial', Times, serif; margin: 0; padding: 0; background: white; color: black; }
+                        
+                        .single-report-page {
+                            padding: 20px 30px;
+                            page-break-after: always !important; 
+                            box-sizing: border-box;
+                        }
+                        
+                        /* Header & Info */
+                        .report-header-print { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+                        .report-header-text h1 { margin: 0; font-size: 20pt; color: #000; text-transform: uppercase; }
+                        .report-header-text p { margin: 2px 0 0 0; font-size: 12pt; color: #000; }
+                        .report-header-logo img { height: 80px; object-fit: contain; }
+                        
+                        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+                        .info-card { border: 1px solid #000; padding: 10px; border-radius: 6px; font-size: 12pt; page-break-inside: avoid; }
+                        .info-card h4 { margin: 0 0 5px 0; font-size: 13pt; color: #000; }
+                        
+                        /* Chart & Section Title */
+                        .chart-container { height: 220px; margin-bottom: 15px; border: 1px solid #000; padding: 5px; page-break-inside: avoid; text-align: center; }
+                        h4.section-title { margin: 10px 0 5px 0; font-size: 13pt; border-bottom: 1px dashed #000; padding-bottom: 3px; page-break-after: avoid; color: #000; }
+                        
+                        /* CẤU TRÚC BẢNG ĐIỂM (Cho phép đứt gãy sang trang 2) */
+                        table { width: 100%; border-collapse: collapse; font-size: 11pt; page-break-inside: auto !important; font-weight: bold; }
+                        tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+                        th, td { border: 1px solid #000; padding: 8px 6px; text-align: center; color: #000; }
+                        th { background-color: #f0f0f0; font-weight: bold; -webkit-print-color-adjust: exact; }
+                        td { font-weight: bold; }
+                        
+                        /* Nhận xét */
+                        .teacher-comment-section { margin-top: 15px; border: 2px solid #000; padding: 10px; border-radius: 8px; font-size: 12pt; line-height: 1.4; page-break-inside: avoid; }
+                    </style>
+                </head>
+                <body>
+                    ${htmlContent}
+                </body>
+                </html>
+            `);
+            doc.close();
+
+            // 4. CHỜ 1 GIÂY để trình duyệt load xong ảnh biểu đồ rồi mới bật hộp thoại in
+            setTimeout(function() {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                
+                // Dọn dẹp rác sau khi in
+                setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+            }, 1000);
+        }
+    </script>
 </body>
 </html>
