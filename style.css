@@ -1682,30 +1682,22 @@ td a.btn-delete:active {
 }
 
 @media print {
-    /* 1. ÉP BUNG CHIỀU CAO TRANG GỐC (Bắt buộc phải có) */
-    html, body {
-        height: auto !important;
-        min-height: 100% !important;
-        overflow: visible !important;
+        html, body {
         margin: 0 !important;
         padding: 0 !important;
-        background-color: #fff !important;
+        background: white !important;
     }
 
-    /* Đã xóa bỏ đoạn body * { visibility: hidden; } gây lỗi */
-
-    /* 2. CẤU HÌNH KHUNG CHỨA (Cho phép tràn sang trang sau) */
+    * {
+    max-height: none !important;
+    }
+    body {
+        overflow: visible !important;
+    }
     .container {
-        position: relative !important; 
-        height: auto !important;      
-        overflow: visible !important; 
-        width: 100%;
-        max-width: 100% !important; /* Ghi đè giới hạn 1300px trên web */
-        margin: 0;
-        padding: 0;
-        background-color: white !important;
-        border: none !important;
-        box-shadow: none !important;
+        display: block !important;  
+        height: auto !important;
+        overflow: visible !important;
     }
 
     .bulk-container {
@@ -1716,11 +1708,12 @@ td a.btn-delete:active {
         margin: 0;
         padding: 0;
         background-color: white !important;
+        max-height: none !important;
     }
     
     .watermark-print-logo {
         display: block !important;
-        position: fixed; 
+        position: absolute; 
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
@@ -1748,6 +1741,7 @@ td a.btn-delete:active {
         box-shadow: none !important;
         background-color: white !important;
         margin-top: 0 !important; 
+        page-break-inside: auto !important;
     }
     tr {
         page-break-inside: avoid !important; 
@@ -1838,7 +1832,6 @@ td a.btn-delete:active {
         page-break-after: always !important;
         break-after: page !important;
         height: auto !important;
-        min-height: 95vh !important;
         border: none !important;
         box-shadow: none !important;
         margin: 0 !important;

@@ -173,6 +173,71 @@ try {
         .col-ten { text-align: left !important; font-weight: bold; }
         .col-score { font-weight: bold; color: var(--text-color); }
         .col-total { color: #e74c3c; font-weight: bold; background-color: rgba(231, 76, 60, 0.1); }
+
+        @media print {
+            /* 1. ĐÂY LÀ ĐOẠN BỊ THIẾU: Phá vỡ hoàn toàn cái khung chứa trang web */
+            html, body, main, .container, form {
+                display: block !important;
+                position: static !important;
+                height: auto !important;
+                max-height: none !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: #fff !important;
+                box-shadow: none !important;
+                border: none !important;
+                max-width: 100% !important; /* Phá vỡ cái max-width: 1300px của thẻ main */
+            }
+
+            /* 2. Ẩn các nút bấm, header */
+            .header, .filter-form, .btn-print, .auth-buttons, p.no-print, th.no-print, td.no-print, .no-print {
+                display: none !important;
+            }
+
+            /* 3. Tiêu đề */
+            h2, h3 { 
+                text-align: center !important; 
+                color: #000 !important; 
+                page-break-after: avoid !important; 
+                display: block !important;
+            }
+
+            /* 4. Ép bảng phải được cắt trang */
+            table, .report-table {
+                display: table !important;
+                width: 100% !important;
+                border-collapse: collapse !important;
+                page-break-inside: auto !important;
+                margin-top: 10px !important;
+            }
+            thead { display: table-header-group !important; }
+            tbody { display: table-row-group !important; }
+            tr {
+                display: table-row !important;
+                page-break-inside: avoid !important;
+                page-break-after: auto !important;
+            }
+            th, td {
+                display: table-cell !important;
+                border: 1px solid #000 !important;
+                color: #000 !important;
+                padding: 8px !important;
+                background-color: #fff !important;
+            }
+
+            /* 5. Logo chìm */
+            .watermark-print-logo {
+                display: block !important;
+                position: fixed !important; 
+                top: 50% !important; 
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                z-index: -1 !important; 
+                opacity: 0.15 !important;
+            }
+        }
     </style>
 </head>
 <body class="admin-page-blue">
@@ -250,7 +315,7 @@ try {
                             <th style="width: 80px;">TB Chuyên Cần</th>
                             <th style="width: 80px;">TB BTVN</th>
                             <th style="width: 80px;">TB Tích lũy</th>
-                            <th class = "no-print" style="width: 80px;">Hành động</th> </tr>
+                            <th class="no-print" style="width: 80px;">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -285,7 +350,7 @@ try {
                     </tbody>
                 </table>
                 
-                <p class ="no-print" style="font-style: italic; color: var(--text-color-light); margin-top: 10px;">
+                <p class="no-print" style="font-style: italic; color: var(--text-color-light); margin-top: 10px;">
                 * Lưu ý: Khi xuất file PDF thì để chế độ Landscape.<br>
                 <?php if ($is_lop2): ?>
                     * Điểm Tích Lũy = (TB CC + TB BTVN) / 2
@@ -295,7 +360,7 @@ try {
                 </p>
 
             </form>
-            <div style="margin-top: 30px; text-align: right; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <div class="no-print" style="margin-top: 30px; text-align: right; border-top: 1px solid var(--border-color); padding-top: 20px;">
                 
                 <a href="bulk_student_report.php?lop_id=<?php echo $lop_id_filter; ?>&thang=<?php echo $thang_filter; ?>&nam=<?php echo $nam_filter; ?>" 
                    target="_blank" 
@@ -304,7 +369,7 @@ try {
                     <i class="fas fa-layer-group"></i> Xuất Tập Báo Cáo Cả Lớp
                 </a>
 
-                <button onclick="window.print()" class="btn-print">
+                <button onclick="inBaoCao()" type="button" class="btn-print">
                     <i class="fas fa-file-pdf"></i> Xuất Bảng Tổng Hợp
                 </button>
             </div>
@@ -313,5 +378,71 @@ try {
     </main>
 
     <script src="admin_main.js"></script>
+    <script>
+    function inBaoCao() {
+        // 1. Lấy dữ liệu Tiêu đề và Bảng
+        var tieuDe = document.querySelector('h3').outerHTML;
+        var bangDiem = document.querySelector('.report-table').outerHTML;
+        
+        // LẤY ĐƯỜNG DẪN ẢNH LOGO TỪ GIAO DIỆN WEB
+        var logoElement = document.querySelector('.watermark-print-logo');
+        var logoSrc = logoElement ? logoElement.src : ''; 
+        var logoHTML = logoSrc ? `<img src="${logoSrc}" class="watermark-print-logo">` : '';
+
+        // 2. Tạo khung ẩn (Iframe)
+        var iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        // 3. Viết HTML và CSS (Thêm CSS cho Watermark)
+        var doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(`
+            <html>
+            <head>
+                <title>Báo cáo</title>
+                <style>
+                    body { font-family: 'Arial', Times, serif; padding: 20px; color: black; }
+                    h3 { text-align: center; margin-bottom: 20px; font-size: 20px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 14px; font-weight: bold; }
+                    
+                    th { background-color: #f0f0f0; font-weight: bold; -webkit-print-color-adjust: exact; }
+                    th:last-child, td:last-child { display: none !important; }
+                    tr { page-break-inside: avoid; page-break-after: auto; }
+                    thead { display: table-header-group; }
+                    
+                    /* ĐỊNH DẠNG CHO LOGO CHÌM */
+                    .watermark-print-logo {
+                        display: block;
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 500px;
+                        opacity: 0.15;
+                        z-index: -1;
+                    }
+                </style>
+            </head>
+            <body>
+                ${logoHTML}
+                ${tieuDe}
+                ${bangDiem}
+            </body>
+            </html>
+        `);
+        doc.close();
+        
+        // 4. QUAN TRỌNG: Chờ nửa giây (500ms) để ảnh logo load xong mới gọi máy in
+        setTimeout(function() {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            
+            // In xong thì dọn dẹp
+            setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+        }, 500);
+    }
+    </script>
 </body>
 </html>
