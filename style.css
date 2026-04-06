@@ -1694,7 +1694,9 @@ td a.btn-delete:active {
     }
 
     .container {
-        position: absolute;
+        position: relative !important; 
+        height: auto !important;      
+        overflow: visible !important; 
         left: 0;
         top: 0;
         width: 100%;
@@ -1706,7 +1708,9 @@ td a.btn-delete:active {
     }
 
     .bulk-container {
-        position: absolute;
+        position: relative !important; 
+        height: auto !important;
+        overflow: visible !important;
         left: 0;
         top: 0;
         width: 100%;
@@ -1744,7 +1748,10 @@ td a.btn-delete:active {
         background-color: white !important;
         margin-top: 0 !important; 
     }
-    
+    tr {
+        page-break-inside: avoid !important; 
+        page-break-after: auto !important;
+    }
     th, td {
         border: 1px solid #000 !important; 
         color: #000 !important; 
