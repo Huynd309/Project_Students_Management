@@ -1682,24 +1682,25 @@ td a.btn-delete:active {
 }
 
 @media print {
-    
-    body * {
-        visibility: hidden;
+    /* 1. ÉP BUNG CHIỀU CAO TRANG GỐC (Bắt buộc phải có) */
+    html, body {
+        height: auto !important;
+        min-height: 100% !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: #fff !important;
     }
 
-    .container, .container *,
-    .bulk-container, .bulk-container *,
-    .watermark-print-logo {
-        visibility: visible !important;
-    }
+    /* Đã xóa bỏ đoạn body * { visibility: hidden; } gây lỗi */
 
+    /* 2. CẤU HÌNH KHUNG CHỨA (Cho phép tràn sang trang sau) */
     .container {
         position: relative !important; 
         height: auto !important;      
         overflow: visible !important; 
-        left: 0;
-        top: 0;
         width: 100%;
+        max-width: 100% !important; /* Ghi đè giới hạn 1300px trên web */
         margin: 0;
         padding: 0;
         background-color: white !important;
@@ -1711,8 +1712,6 @@ td a.btn-delete:active {
         position: relative !important; 
         height: auto !important;
         overflow: visible !important;
-        left: 0;
-        top: 0;
         width: 100%;
         margin: 0;
         padding: 0;
@@ -1727,10 +1726,11 @@ td a.btn-delete:active {
         transform: translate(-50%, -50%);
         width: 500px; 
         opacity: 0.15; 
-        z-index: 9999; 
+        z-index: -1; /* Cho chìm xuống dưới cùng để không che mất chữ */
         pointer-events: none;
     }
 
+    /* 3. ẨN CÁC THÀNH PHẦN KHÔNG CẦN THIẾT BẰNG DISPLAY: NONE */
     .filter-form, .btn-print, .submit-btn, button, .header, 
     .container > h2:first-child, 
     .container > p:first-of-type, 
@@ -1740,6 +1740,7 @@ td a.btn-delete:active {
         display: none !important;
     }
 
+    /* 4. CẤU HÌNH BẢNG DANH SÁCH (Chống đứt đôi dòng) */
     table {
         width: 100% !important;
         border-collapse: collapse !important; 
@@ -1778,17 +1779,17 @@ td a.btn-delete:active {
         margin-bottom: 20px;
         font-size: 1.4em;
         color: #000 !important;
-        visibility: visible; 
     }
 
+    /* 5. CÁC THÀNH PHẦN CHI TIẾT KHÁC */
     textarea.comment-box {
         border: none !important;
         background: transparent !important;
         resize: none;
         box-shadow: none !important;
         padding: 5px 0 !important; 
-        height: auto;
-        overflow: visible;
+        height: auto !important;
+        overflow: visible !important;
         color: #000000 !important;   
         font-weight: 700 !important; 
         font-size: 12pt !important;  
