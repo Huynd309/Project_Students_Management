@@ -65,6 +65,7 @@ try {
     <meta charset="UTF-8">
     <title>Báo cáo điểm danh</title>
     <link rel="stylesheet" href="style.css"> 
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
     </head>
 <body class="admin-page-blue"> <header class="header">
         <div class="auth-buttons">

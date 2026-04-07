@@ -173,6 +173,7 @@ function getTrangThaiText($status) {
     <title>Báo cáo hàng ngày</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
     <style>
         .report-table th { text-align: center; font-size: 0.95em; vertical-align: middle; }
         .report-table td { text-align: center; vertical-align: middle; }

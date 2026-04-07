@@ -7,6 +7,7 @@ session_start();
     <meta charset="UTF-8">
     <title>Đăng nhập</title>
     <link rel="stylesheet" href="auth.css"> 
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>

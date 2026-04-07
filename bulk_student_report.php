@@ -88,7 +88,7 @@ try {
             'info' => $std,
             'scores' => $scores,
             'attendance' => $attendance_stats,
-            'daily_cc' => $daily_cc_scores, // Truyền mảng điểm danh chi tiết xuống view
+            'daily_cc' => $daily_cc_scores, 
             'comment' => $comment
         ];
     }
@@ -105,6 +105,7 @@ try {
     <title>In Báo Cáo Tháng <?php echo htmlspecialchars($month) . '/' . htmlspecialchars($year); ?></title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background: #eee; margin: 0; padding: 0; }
@@ -117,7 +118,6 @@ try {
             position: relative;
             box-sizing: border-box;
 
-            /* 1. ĐÃ BẺ KHÓA: Cho phép chiều cao tự do, ngắt trang tự động sau mỗi học sinh */
             height: auto;
             max-height: none;
             overflow: visible; 

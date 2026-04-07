@@ -54,7 +54,7 @@ $conn = null;
     <meta charset="UTF-8">
     <title>Sửa thông tin: <?php echo htmlspecialchars($student['ho_ten']); ?></title>
     <link rel="stylesheet" href="style.css">
-
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
 </head>
 <body class="admin-page-blue">
 

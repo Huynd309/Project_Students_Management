@@ -56,6 +56,7 @@ try {
     <meta charset="UTF-8">
     <title>Điểm danh & Nhập điểm</title>
     <link rel="stylesheet" href="style.css?v=3"> 
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
     <style>
         :root {
             --card-bg: #ffffff;

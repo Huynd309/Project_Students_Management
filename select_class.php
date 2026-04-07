@@ -51,6 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <title>Chọn lớp học</title>
     <link rel="stylesheet" href="style.css"> 
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
     <style>
         body {
             display: flex;

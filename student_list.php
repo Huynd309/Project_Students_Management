@@ -100,6 +100,7 @@ try {
     <meta charset="UTF-8">
     <title>Danh sách học sinh</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
     <style>
         .filter-form { justify-content: flex-start; }
     </style>

@@ -86,6 +86,7 @@ try {
     <title>Báo cáo tháng: <?php echo htmlspecialchars($student['ho_ten']); ?></title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="nhatdao_watermark2.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
