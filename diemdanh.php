@@ -293,18 +293,18 @@ try {
 
             <div style="display: flex; gap: 20px; width: 100%;">
                 <div class="form-group">
-                    <label><i class="fas fa-book"></i> Nội dung bài dạy (Lưu điểm danh):</label>
+                    <label><i class="fas fa-book"></i> Nội dung bài dạy:</label>
                     <input type="text" name="lesson_title" placeholder="VD: Bài 5: Phương trình bậc hai..." required>
                 </div>
                 
                 <div class="form-group">
-                    <label style="color: #e74c3c;"><i class="fas fa-pen-alt"></i> Tên bài kiểm tra (Lưu cột điểm):</label>
+                    <label style="color: #e74c3c;"><i class="fas fa-pen-alt"></i> Tên bài Test:</label>
                     <input type="text" name="test_title" placeholder="VD: Kiểm tra 15 phút (Nếu không có điểm thì để trống)">
                 </div>
             </div>
             
             <div style="width: 100%; margin-top: 10px;">
-                <button type="submit" class="btn-submit-main">Tiếp tục lấy danh sách <i class="fas fa-arrow-right"></i></button>
+                <button type="submit" class="btn-submit-main">Lấy danh sách học sinh <i class="fas fa-arrow-right"></i></button>
             </div>
         </form>
 
