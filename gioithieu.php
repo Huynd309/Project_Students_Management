@@ -228,6 +228,7 @@ if (isset($_GET['sbd_tra_cuu'])) {
                         <a href="luyenthi_cs2.php"><i class="fas fa-map-marker-alt"></i> Cơ sở 2: Thôn Hương</a>
                         <a href="luyenthi_cs3.php"><i class="fas fa-map-marker-alt"></i> Cơ sở 3: Mai Hiên</a>
                         <a href="#"><i class="fas fa-clock"></i> Cơ sở 4</a>
+                        <a href="danhsach_dethi.php"><i class="fa regular fa-book"></i> Đề thi THPT</a>
                     </div>
                 </div>
                 <a href="#">Nhất Đạo Gia sư</a>
