@@ -11,7 +11,6 @@ db_config.php
 
 # Thường chúng ta không đẩy ảnh/file do người dùng upload lên Git
 # (Trừ khi bạn muốn giữ ảnh mẫu)
-uploads/
 
 # File log lỗi (nếu có)
 error_log
